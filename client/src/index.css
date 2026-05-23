@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6c63ff;
+  --color-primary-dark: #4f46e5;
+  --color-violet: #8b5cf6;
+  --color-indigo: #6366f1;
+  --color-bg-main: #ffffff;
+  --color-bg-light: #f8fafc;
+  --color-bg-card: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --color-aurora-base: #fafaf8;
+  --color-aurora-sage: #e8ede8;
+  --color-aurora-slate: #e4e8f0;
+  --color-aurora-rose: #f0ece8;
+
+  --font-fraunces: "Fraunces", serif;
+  --font-inter: "Instrument Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-georgia: Georgia, "Times New Roman", serif;
+}
+
+body {
+  font-family: var(--font-inter);
+  @apply bg-bg-light text-text-primary antialiased;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.app-aurora {
+  background-color: #fafaf8;
+  background-image:
+    radial-gradient(circle 600px at 0% 0%, rgb(139 168 136 / 0.15) 0%, transparent 70%),
+    radial-gradient(circle 600px at 100% 100%, rgb(122 143 166 / 0.15) 0%, transparent 70%);
+}
+
+.app-noise {
+  opacity: 0.03;
+  mix-blend-mode: multiply;
+}
+
+.app-card {
+  @apply rounded-xl border border-[#E8E8E4] bg-white;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-step-in {
+  animation: step-in 0.35s ease-out;
+}
+
+.font-hero {
+  font-family: var(--font-fraunces);
+}
+
+.font-ui {
+  font-family: var(--font-inter);
+}
+
+.font-resume {
+  font-family: var(--font-georgia);
+}
+
+.hero-aurora {
+  background-color: var(--color-aurora-base);
+  background-image:
+    /* warm amber/sand blob — top-left */
+    radial-gradient(
+      ellipse 110% 90% at -8% -12%,
+      rgb(235 225 205 / 0.15) 0%,
+      transparent 52%
+    ),
+    /* cool sage/slate blob — bottom-right */
+    radial-gradient(
+      ellipse 100% 85% at 108% 112%,
+      rgb(196 208 198 / 0.15) 0%,
+      transparent 50%
+    ),
+    /* dusty rose — soft edge wash, top-right */
+    radial-gradient(
+      ellipse 55% 45% at 98% 2%,
+      rgb(240 236 232 / 0.55) 0%,
+      transparent 68%
+    ),
+    /* dusty rose — soft edge wash, bottom-left */
+    radial-gradient(
+      ellipse 50% 40% at 2% 98%,
+      rgb(240 236 232 / 0.45) 0%,
+      transparent 62%
+    ),
+    /* sage green — center-left bleed */
+    radial-gradient(
+      ellipse 75% 65% at 18% 48%,
+      rgb(232 237 232 / 0.7) 0%,
+      transparent 66%
+    ),
+    /* warm slate blue — center */
+    radial-gradient(
+      ellipse 70% 60% at 58% 42%,
+      rgb(228 232 240 / 0.65) 0%,
+      transparent 64%
+    ),
+    /* sage/slate bridge — lower center */
+    radial-gradient(
+      ellipse 80% 55% at 42% 72%,
+      rgb(224 230 228 / 0.5) 0%,
+      transparent 60%
+    ),
+    /* ambient fog — fills remaining white space */
+    radial-gradient(
+      ellipse 90% 80% at 50% 50%,
+      rgb(250 250 248 / 0.9) 0%,
+      transparent 75%
+    );
+}
+
+.hero-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.before-after-float {
+  animation: hero-float 5s ease-in-out infinite;
+}
+
+.before-after-float:hover {
+  animation: hero-float 2.5s ease-in-out infinite;
+}
+
+.before-after-shadow {
+  background: radial-gradient(
+    ellipse 70% 40% at 50% 50%,
+    rgb(15 23 42 / 0.08) 0%,
+    transparent 70%
+  );
+  filter: blur(12px);
+  transform: translateY(8px) scaleX(0.85);
+}
+
+@keyframes message-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.analysis-message {
+  animation: message-pop 0.35s ease-out;
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+client/dist/
+client/node_modules/
+client/tsconfig.tsbuildinfo
+data/
+.env
+*.db
+*.log
+.DS_Store
+buffer

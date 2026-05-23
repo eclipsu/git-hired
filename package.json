@@ -1,0 +1,52 @@
+{
+  "name": "git-hired",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turn GitHub activity into an ATS-optimized resume",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "nodemon",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build:client && npm run build:server",
+    "build:server": "tsc",
+    "build:client": "npm run build --prefix client",
+    "start": "node dist/index.js",
+    "docker:dev": "docker compose up --build",
+    "docker:prod": "docker compose --profile prod up --build"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@octokit/rest": "^21.1.1",
+    "better-sqlite3": "^11.10.0",
+    "connect-sqlite3": "^0.9.15",
+    "csurf": "^1.11.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "mammoth": "^1.9.0",
+    "multer": "^2.1.1",
+    "node-latex": "^3.1.0",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "pdf-parse": "^1.1.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/connect-sqlite3": "^0.9.5",
+    "@types/csurf": "^1.11.5",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.1",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^22.13.10",
+    "@types/passport": "^1.0.17",
+    "@types/passport-github2": "^1.2.9",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
