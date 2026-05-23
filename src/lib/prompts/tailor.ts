@@ -1,4 +1,5 @@
 import { TailoredResume } from '../latex';
+import { parseJsonFromText } from '../gemini';
 
 export function buildTailorPrompt(input: {
   bullets: { text: string; repo: string; displayName: string }[];
@@ -10,35 +11,67 @@ export function buildTailorPrompt(input: {
     .map((b) => `- [${b.displayName}] ${b.text}`)
     .join('\n');
 
-  return `You are an expert ATS resume optimizer and LaTeX resume author.
+  return `You are an expert ATS resume optimizer. Given GitHub project bullets, optional prior experience from an uploaded resume, optional user notes, and an optional job description, produce structured resume content for a Jake Gutierrez-style LaTeX resume.
 
-Given resume bullet points, optional prior experience, optional user notes, and an optional job description, do the following:
-
-1. If a job description is provided, rewrite and reorder bullets to maximize keyword match. Subtly rephrase to match the role's vocabulary without stuffing. Most relevant bullets first.
-2. Write a 2-sentence professional summary tailored to the role (or general if no JD provided).
-3. Produce a Technical Skills section grouped by category (Languages, Frameworks, Infrastructure, Tools, etc.).
-4. Incorporate any prior experience or education from the uploaded resume or user notes into the appropriate sections.
+Do the following:
+1. If a job description is provided, rewrite and reorder bullets to maximize keyword match without stuffing.
+2. Group GitHub repository bullets into the "projects" section (one project per repo).
+3. Put prior employment from the uploaded resume or user notes into "experience".
+4. Put education from uploaded resume or notes into "education".
+5. Put clubs, volunteering, or leadership roles into "leadership" (omit section if none).
+6. Produce Technical Skills grouped by category (Languages, Frameworks & Libraries, Tools & Technologies, etc.).
 
 Rules:
 - Never invent metrics, companies, or experiences not present in the source data
 - Preserve factual accuracy at all times
+- Each experience/project entry needs 2–5 strong bullet points where data allows
+- Use date formats like "Mon YYYY -- Mon YYYY" or "Expected Mon YYYY"
+- For GitHub-only work with no employer, do NOT put repos in experience — use projects only
 
 Return ONLY valid JSON, no markdown fences:
 {
-  "summary": "...",
-  "skills": { "Languages": ["Python", "TypeScript"], "Frameworks": ["React"] },
+  "skills": {
+    "Languages": ["Python", "TypeScript"],
+    "Frameworks & Libraries": ["React"],
+    "Tools & Technologies": ["Git/GitHub", "PostgreSQL"]
+  },
   "experience": [
     {
-      "title": "Software Engineer",
-      "org": "Open Source & Independent Projects",
-      "dates": "2022–Present",
+      "title": "Software Engineer Intern",
+      "org": "Company Name",
+      "dates": "Jun 2024 -- Aug 2024",
+      "location": "City, State",
       "bullets": ["bullet 1", "bullet 2"]
     }
   ],
-  "education": [{ "degree": "...", "institution": "...", "year": "..." }]
+  "projects": [
+    {
+      "name": "Project Name",
+      "techStack": "React, Node.js, PostgreSQL",
+      "dates": "Jan 2024",
+      "bullets": ["bullet 1", "bullet 2"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University Name",
+      "dates": "Expected May 2026",
+      "degree": "B.S. in Computer Science -- GPA: 3.8/4.00",
+      "location": "City, State"
+    }
+  ],
+  "leadership": [
+    {
+      "org": "Club Name",
+      "dates": "Aug 2023 -- Present",
+      "role": "President",
+      "location": "City, State",
+      "bullets": ["bullet 1"]
+    }
+  ]
 }
 
-Resume bullet points:
+Resume bullet points (from GitHub repos):
 ${bulletList}
 
 Uploaded resume text:
@@ -52,8 +85,8 @@ ${input.jobDescription || 'None'}`;
 }
 
 export function parseTailorResponse(text: string): TailoredResume {
-  const parsed = JSON.parse(text) as TailoredResume;
-  if (!parsed.summary || !parsed.skills || !parsed.experience) {
+  const parsed = parseJsonFromText<TailoredResume>(text);
+  if (!parsed.skills || !parsed.experience || !parsed.projects || !parsed.education) {
     throw new Error('Invalid tailor response from Gemini');
   }
   return parsed;

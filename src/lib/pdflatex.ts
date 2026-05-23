@@ -13,5 +13,5 @@ export function isPdflatexAvailable(): boolean {
 }
 
 export function pdflatexErrorMessage(): string {
-  return `pdflatex is not installed on this machine. ${INSTALL_HINT}`;
+  return `pdflatex is not installed on this machine. ${INSTALL_HINT} (also needs texlive-fonts-extra for fontawesome5)`;
 }

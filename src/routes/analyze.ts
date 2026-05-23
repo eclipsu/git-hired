@@ -4,12 +4,15 @@ import { User } from '../db/entities/User';
 import { ResumeSession } from '../db/entities/ResumeSession';
 import { AppDataSource } from '../db/dataSource';
 import { createOctokitForUser, delay, fetchRepoAnalysisData } from '../lib/github';
-import { ask } from '../lib/gemini';
+import { ask, parseJsonFromText } from '../lib/gemini';
 import {
   buildAnalyzeRepoPrompt,
   extractBulletsFromResponse,
 } from '../lib/prompts/analyzeRepo';
 import { getOrCreateResumeSession } from '../lib/sessions';
+import {
+  repoFingerprint,
+} from '../lib/repoCache';
 
 const router = Router();
 
@@ -22,15 +25,69 @@ async function askGeminiForBullets(
   prompt: string,
   repoName: string,
 ): Promise<string[]> {
-  let text = await ask(prompt);
+  const text = await ask(prompt);
+  const parsed = parseJsonFromText<unknown>(text);
+  return extractBulletsFromResponse(parsed, repoName);
+}
 
-  try {
-    const parsed = JSON.parse(text);
-    return extractBulletsFromResponse(parsed, repoName);
-  } catch {
-    text = await ask(prompt);
-    const parsed = JSON.parse(text);
-    return extractBulletsFromResponse(parsed, repoName);
+function getCachedRepoUpdatedAt(
+  session: ResumeSession,
+  repoName: string,
+): string | null {
+  const cached = session.cachedRepos?.find((r) => r.name === repoName);
+  if (!cached) return null;
+  return repoFingerprint(cached);
+}
+
+function isBulletCacheValid(
+  session: ResumeSession,
+  repoName: string,
+): boolean {
+  const entry = session.repoAnalysisCache?.[repoName];
+  if (!entry?.bullets?.length) return false;
+
+  const currentFingerprint = getCachedRepoUpdatedAt(session, repoName);
+  if (!currentFingerprint) return false;
+
+  return entry.repoUpdatedAt === currentFingerprint;
+}
+
+async function refreshRepoFingerprints(
+  session: ResumeSession,
+  user: User,
+  repoNames: string[],
+): Promise<void> {
+  const octokit = createOctokitForUser(user);
+  if (!session.cachedRepos) session.cachedRepos = [];
+
+  for (const name of repoNames) {
+    try {
+      const { data } = await octokit.repos.get({ owner: user.username, repo: name });
+      const pushedAt = data.pushed_at ?? data.updated_at ?? new Date().toISOString();
+      const updatedAt = data.updated_at ?? pushedAt;
+      const existing = session.cachedRepos.find((r) => r.name === name);
+
+      if (existing) {
+        existing.pushedAt = pushedAt;
+        existing.updatedAt = updatedAt;
+        existing.stars = data.stargazers_count;
+        existing.description = data.description;
+        existing.primaryLanguage = data.language;
+      } else {
+        session.cachedRepos.push({
+          name,
+          description: data.description,
+          primaryLanguage: data.language,
+          stars: data.stargazers_count,
+          forkCount: data.forks_count,
+          commitCount: 0,
+          updatedAt,
+          pushedAt,
+        });
+      }
+    } catch {
+      // repo may have been deleted; skip fingerprint refresh
+    }
   }
 }
 
@@ -55,37 +112,84 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const octokit = createOctokitForUser(user);
+    const session = await getOrCreateResumeSession(user);
+    if (!session.repoAnalysisCache) {
+      session.repoAnalysisCache = {};
+    }
+
+    await refreshRepoFingerprints(session, user, repos.map((r) => r.name));
+
     const rawBullets: Record<string, string[]> = {};
     const displayNames: Record<string, string> = {};
+    const cachedRepos: string[] = [];
+    const analyzedRepos: string[] = [];
+
+    const needsGitHubFetch = repos.some((r) => !isBulletCacheValid(session, r.name));
+
+    let octokit = null;
+    if (needsGitHubFetch) {
+      octokit = createOctokitForUser(user);
+    }
 
     for (let i = 0; i < repos.length; i += 1) {
       const { name, displayName } = repos[i];
-      displayNames[name] = displayName || name;
+      const resolvedDisplayName = displayName || name;
+      displayNames[name] = resolvedDisplayName;
 
-      if (i > 0) {
+      if (isBulletCacheValid(session, name)) {
+        const entry = session.repoAnalysisCache![name];
+        rawBullets[name] = entry.bullets;
+        displayNames[name] = entry.displayName || resolvedDisplayName;
+        cachedRepos.push(name);
+        continue;
+      }
+
+      if (i > 0 && octokit) {
         await delay(100);
       }
 
+      analyzedRepos.push(name);
+
       const repoData = await fetchRepoAnalysisData(
-        octokit,
+        octokit!,
         user.username,
         name,
         user.username,
       );
 
-      const prompt = buildAnalyzeRepoPrompt(repoData);
-      rawBullets[name] = await askGeminiForBullets(prompt, name);
+      const bullets = await askGeminiForBullets(buildAnalyzeRepoPrompt(repoData), name);
+      rawBullets[name] = bullets;
+
+      const repoUpdatedAt =
+        getCachedRepoUpdatedAt(session, name) ?? new Date().toISOString();
+
+      session.repoAnalysisCache[name] = {
+        bullets,
+        displayName: resolvedDisplayName,
+        repoUpdatedAt,
+        analyzedAt: new Date().toISOString(),
+      };
     }
 
-    const session = await getOrCreateResumeSession(user);
     session.selectedRepos = repos.map((r) => r.name);
     session.rawBullets = rawBullets;
     await AppDataSource.getRepository(ResumeSession).save(session);
 
-    console.log('[analyze] Generated bullets for repos:', Object.keys(rawBullets));
+    console.log(
+      '[analyze]',
+      user.username,
+      '— cached:',
+      cachedRepos.join(', ') || 'none',
+      '| analyzed:',
+      analyzedRepos.join(', ') || 'none',
+    );
 
-    res.json({ bullets: rawBullets, displayNames });
+    res.json({
+      bullets: rawBullets,
+      displayNames,
+      cachedRepos,
+      analyzedRepos,
+    });
   } catch (err) {
     next(err);
   }

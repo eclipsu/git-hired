@@ -9,13 +9,19 @@ import path from 'path';
 import fs from 'fs';
 import { AppDataSource } from './db/dataSource';
 import { User } from './db/entities/User';
+import { GeminiQuotaError } from './lib/gemini';
 import { configurePassport } from './lib/passport';
 import authRoutes from './routes/auth';
 import reposRoutes from './routes/repos';
 import analyzeRoutes from './routes/analyze';
 import parseResumeRoutes from './routes/parseResume';
+import extractProfileRoutes from './routes/extractProfile';
+import sessionRoutes from './routes/session';
 import tailorRoutes from './routes/tailor';
 import compileRoutes from './routes/compile';
+import versionsRoutes from './routes/versions';
+import shareRoutes from './routes/share';
+import dashboardRoutes from './routes/dashboard';
 import { isPdflatexAvailable, pdflatexErrorMessage } from './lib/pdflatex';
 
 dotenv.config();
@@ -82,16 +88,30 @@ async function main() {
   app.use('/api/repos', reposRoutes);
   app.use('/api/analyze', analyzeRoutes);
   app.use('/api/parse-resume', parseResumeRoutes);
+  app.use('/api/extract-profile', extractProfileRoutes);
+  app.use('/api/session', sessionRoutes);
   app.use('/api/tailor', tailorRoutes);
   app.use('/api/compile', compileRoutes);
+  app.use('/api/versions', versionsRoutes);
+  app.use('/api/share', shareRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
 
   app.use((err: Error, _req: Request, res: Response, _next: () => void) => {
     console.error(err);
+    if (err instanceof GeminiQuotaError) {
+      res.status(429).json({
+        error: err.message,
+        retryAfterMs: err.retryAfterMs ?? null,
+      });
+      return;
+    }
     const message = err.message.includes('GEMINI_API_KEY')
       ? err.message
-      : err.message.includes('GoogleGenerativeAI')
-        ? `Gemini API error: ${err.message}`
-        : err.message || 'Internal server error';
+      : err.message.includes('GoogleGenerativeAI') && err.message.includes('429')
+        ? 'Gemini API rate limit exceeded. Please wait a minute and try again.'
+        : err.message.includes('GoogleGenerativeAI')
+          ? `Gemini API error: ${err.message}`
+          : err.message || 'Internal server error';
     res.status(500).json({ error: message });
   });
 

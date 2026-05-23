@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './User';
+import type { CachedRepo, RepoAnalysisCache } from '../../lib/repoCache';
 
 @Entity()
 export class ResumeSession {
@@ -15,6 +16,15 @@ export class ResumeSession {
 
   @ManyToOne(() => User, (user) => user.resumeSessions)
   user!: User;
+
+  @Column('simple-json', { nullable: true })
+  cachedRepos!: CachedRepo[];
+
+  @Column({ type: 'datetime', nullable: true })
+  reposCachedAt!: Date | null;
+
+  @Column('simple-json', { nullable: true })
+  repoAnalysisCache!: RepoAnalysisCache;
 
   @Column('simple-json', { nullable: true })
   selectedRepos!: string[];
@@ -29,10 +39,23 @@ export class ResumeSession {
   uploadedResumeText!: string;
 
   @Column('text', { nullable: true })
+  uploadedResumeFilename!: string;
+
+  @Column('text', { nullable: true })
   userNotes!: string;
 
   @Column('text', { nullable: true })
   jobDescription!: string;
+
+  @Column('simple-json', { nullable: true })
+  contactInfo!: {
+    fullName: string;
+    address: string;
+    phone: string;
+    email: string;
+    linkedin: string;
+    github: string;
+  };
 
   @Column('simple-json', { nullable: true })
   tailoredResume!: object;

@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { ResumeSession } from './ResumeSession';
+import { ResumeVersion } from './ResumeVersion';
 
 @Entity()
 export class User {
@@ -29,4 +30,7 @@ export class User {
 
   @OneToMany(() => ResumeSession, (session) => session.user)
   resumeSessions!: ResumeSession[];
+
+  @OneToMany(() => ResumeVersion, (version) => version.user)
+  resumeVersions!: ResumeVersion[];
 }

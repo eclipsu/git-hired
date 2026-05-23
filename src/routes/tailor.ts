@@ -5,7 +5,7 @@ import { ResumeSession } from '../db/entities/ResumeSession';
 import { AppDataSource } from '../db/dataSource';
 import { ask } from '../lib/gemini';
 import { buildTailorPrompt, parseTailorResponse } from '../lib/prompts/tailor';
-import { generateLatex } from '../lib/latex';
+import { ContactInfo, generateLatex } from '../lib/latex';
 import { getOrCreateResumeSession } from '../lib/sessions';
 
 const router = Router();
@@ -18,11 +18,13 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       notes,
       parsedResumeText,
       jobDescription,
+      contactInfo,
     } = req.body as {
       bullets?: { text: string; repo: string; displayName: string; included: boolean }[];
       notes?: string;
       parsedResumeText?: string;
       jobDescription?: string;
+      contactInfo?: ContactInfo;
     };
 
     if (!Array.isArray(bullets) || bullets.length === 0) {
@@ -38,22 +40,29 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       jobDescription,
     });
 
-    let text = await ask(prompt);
-    let tailored;
-    try {
-      tailored = parseTailorResponse(text);
-    } catch {
-      text = await ask(prompt);
-      tailored = parseTailorResponse(text);
+    const text = await ask(prompt);
+    const tailored = parseTailorResponse(text);
+
+    if (!contactInfo?.fullName || !contactInfo.phone || !contactInfo.email || !contactInfo.github) {
+      res.status(400).json({ error: 'Contact info is incomplete. Please fill in name, phone, email, and GitHub.' });
+      return;
     }
 
-    const generatedTex = generateLatex(tailored, user.username);
+    const generatedTex = generateLatex(tailored, {
+      fullName: contactInfo.fullName,
+      address: contactInfo.address ?? '',
+      phone: contactInfo.phone,
+      email: contactInfo.email,
+      linkedin: contactInfo.linkedin ?? '',
+      github: contactInfo.github,
+    });
 
     const session = await getOrCreateResumeSession(user);
     session.selectedBullets = bullets;
     session.userNotes = notes ?? '';
     session.uploadedResumeText = parsedResumeText ?? session.uploadedResumeText;
     session.jobDescription = jobDescription ?? '';
+    session.contactInfo = contactInfo;
     session.tailoredResume = tailored;
     session.generatedTex = generatedTex;
     await AppDataSource.getRepository(ResumeSession).save(session);

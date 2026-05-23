@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 const LATEX_SPECIAL = /[&%$#_{}~^\\]/g;
 
 export function escapeLatex(value: string): string {
@@ -15,71 +18,265 @@ export function escapeLatex(value: string): string {
   });
 }
 
-export interface TailoredResume {
-  summary: string;
-  skills: Record<string, string[]>;
-  experience: {
-    title: string;
-    org: string;
-    dates: string;
-    bullets: string[];
-  }[];
-  education?: { degree: string; institution: string; year: string }[];
+export interface ContactInfo {
+  fullName: string;
+  address: string;
+  phone: string;
+  email: string;
+  linkedin: string;
+  github: string;
 }
 
-export function generateLatex(
-  resume: TailoredResume,
-  githubUsername: string,
-): string {
-  const skillBlocks = Object.entries(resume.skills ?? {})
-    .map(
-      ([category, skills]) =>
-        `\\cvitem{\\textbf{${escapeLatex(category)}}}{${escapeLatex(skills.join(', '))}}`,
-    )
-    .join('\n');
+export interface ResumeEntry {
+  title: string;
+  org: string;
+  dates: string;
+  location?: string;
+  bullets: string[];
+}
 
-  const experienceBlocks = (resume.experience ?? [])
+export interface ProjectEntry {
+  name: string;
+  techStack: string;
+  dates: string;
+  bullets: string[];
+}
+
+export interface EducationEntry {
+  institution: string;
+  dates: string;
+  degree: string;
+  location?: string;
+}
+
+export interface LeadershipEntry {
+  org: string;
+  dates: string;
+  role: string;
+  location?: string;
+  bullets: string[];
+}
+
+export interface TailoredResume {
+  skills: Record<string, string[]>;
+  experience: ResumeEntry[];
+  projects: ProjectEntry[];
+  education: EducationEntry[];
+  leadership?: LeadershipEntry[];
+}
+
+function normalizeLinkedIn(value: string): { url: string; label: string } {
+  const trimmed = value.trim().replace(/^https?:\/\//i, '');
+  const handle = trimmed.replace(/^www\./i, '').replace(/^linkedin\.com\/in\//i, '');
+  return {
+    url: `https://linkedin.com/in/${handle}`,
+    label: `linkedin.com/in/${handle}`,
+  };
+}
+
+function normalizeGithub(value: string): { url: string; label: string } {
+  const trimmed = value.trim().replace(/^https?:\/\//i, '');
+  const handle = trimmed.replace(/^www\./i, '').replace(/^github\.com\//i, '');
+  return {
+    url: `https://github.com/${handle}`,
+    label: `github.com/${handle}`,
+  };
+}
+
+function bulletList(bullets: string[]): string {
+  if (bullets.length === 0) return '';
+  return `      \\resumeItemListStart
+${bullets.map((b) => `        \\resumeItem{${escapeLatex(b)}}`).join('\n')}
+      \\resumeItemListEnd`;
+}
+
+function experienceSection(entries: ResumeEntry[]): string {
+  if (entries.length === 0) {
+    return `%-----------EXPERIENCE-----------
+\\section{Experience}
+  \\resumeSubHeadingListStart
+  \\resumeSubHeadingListEnd
+\\vspace{-16pt}
+`;
+  }
+
+  const blocks = entries
     .map(
-      (entry) => `\\cventry{${escapeLatex(entry.dates)}}{${escapeLatex(entry.title)}}{${escapeLatex(entry.org)}}{}{}{
-  \\begin{itemize}[leftmargin=*]
-${entry.bullets.map((b) => `    \\item ${escapeLatex(b)}`).join('\n')}
-  \\end{itemize}
-}`,
+      (entry) => `    \\resumeSubheading
+      {${escapeLatex(entry.org)}}{${escapeLatex(entry.dates)}}
+      {${escapeLatex(entry.title)}}{${escapeLatex(entry.location ?? '')}}
+${bulletList(entry.bullets)}`,
     )
     .join('\n\n');
 
-  const educationBlocks = (resume.education ?? [])
+  return `%-----------EXPERIENCE-----------
+\\section{Experience}
+  \\resumeSubHeadingListStart
+
+${blocks}
+
+  \\resumeSubHeadingListEnd
+\\vspace{-16pt}
+`;
+}
+
+function projectsSection(entries: ProjectEntry[]): string {
+  if (entries.length === 0) {
+    return `%-----------PROJECTS-----------
+\\section{Projects}
+    \\vspace{-5pt}
+    \\resumeSubHeadingListStart
+    \\resumeSubHeadingListEnd
+\\vspace{-15pt}
+`;
+  }
+
+  const blocks = entries
+    .map((entry, i) => {
+      const spacing = i < entries.length - 1 ? '\n          \\vspace{-13pt}' : '';
+      return `      \\resumeProjectHeading
+          {\\textbf{${escapeLatex(entry.name)}} $|$ \\emph{${escapeLatex(entry.techStack)}}}{${escapeLatex(entry.dates)}}
+${bulletList(entry.bullets)}${spacing}`;
+    })
+    .join('\n\n');
+
+  return `%-----------PROJECTS-----------
+\\section{Projects}
+    \\vspace{-5pt}
+    \\resumeSubHeadingListStart
+
+${blocks}
+
+    \\resumeSubHeadingListEnd
+\\vspace{-15pt}
+`;
+}
+
+function educationSection(entries: EducationEntry[]): string {
+  if (entries.length === 0) return '';
+
+  const blocks = entries
     .map(
-      (edu) =>
-        `\\cventry{${escapeLatex(edu.year)}}{${escapeLatex(edu.degree)}}{${escapeLatex(edu.institution)}}{}{}{}`,
+      (entry) => `    \\resumeSubheading
+      {${escapeLatex(entry.institution)}}{${escapeLatex(entry.dates)}}
+      {${escapeLatex(entry.degree)}}{${escapeLatex(entry.location ?? '')}}`,
     )
     .join('\n');
 
-  const educationSection =
-    educationBlocks.length > 0
-      ? `\\section{Education}\n${educationBlocks}\n`
-      : '';
+  return `%-----------EDUCATION-----------
+\\section{Education}
+  \\resumeSubHeadingListStart
+${blocks}
+  \\resumeSubHeadingListEnd
 
-  return `\\documentclass[11pt, letterpaper, sans]{moderncv}
-\\moderncvstyle{classic}
-\\moderncvcolor{blue}
-\\usepackage[scale=0.85]{geometry}
-\\usepackage{enumitem}
+`;
+}
 
-\\name{}{}
-\\social[github]{${escapeLatex(githubUsername)}}
+function skillsSection(skills: Record<string, string[]>): string {
+  const lines = Object.entries(skills ?? {})
+    .filter(([, items]) => items.length > 0)
+    .map(
+      ([category, items]) =>
+        `     \\textbf{${escapeLatex(category)}}{: ${escapeLatex(items.join(', '))}} \\\\`,
+    )
+    .join('\n');
 
-\\begin{document}
-\\makecvtitle
-
-\\section{Professional Summary}
-${escapeLatex(resume.summary)}
-
+  return `%-----------TECHNICAL SKILLS-----------
 \\section{Technical Skills}
-${skillBlocks}
+ \\begin{itemize}[leftmargin=0.15in, label={}]
+    \\small{\\item{
+${lines}
+    }}
+ \\end{itemize}
+ \\vspace{-16pt}
+`;
+}
 
-\\section{Experience}
-${experienceBlocks}
+function leadershipSection(entries: LeadershipEntry[] | undefined): string {
+  if (!entries || entries.length === 0) return '';
 
-${educationSection}\\end{document}`;
+  const blocks = entries
+    .map(
+      (entry) => `        \\resumeSubheading{${escapeLatex(entry.org)}}{${escapeLatex(entry.dates)}}{${escapeLatex(entry.role)}}{${escapeLatex(entry.location ?? '')}}
+${bulletList(entry.bullets)}`,
+    )
+    .join('\n');
+
+  return `%-----------LEADERSHIP---------------
+\\section{Leadership}
+    \\resumeSubHeadingListStart
+${blocks}
+    \\resumeSubHeadingListEnd
+
+`;
+}
+
+function headingSection(contact: ContactInfo): string {
+  const linkedin = normalizeLinkedIn(contact.linkedin || '');
+  const github = normalizeGithub(contact.github || '');
+
+  const addressLine = contact.address.trim()
+    ? `${escapeLatex(contact.address)}  \\\\ \\vspace{1pt}`
+    : '';
+
+  return `%----------HEADING----------
+\\begin{center}
+    {\\Huge \\scshape ${escapeLatex(contact.fullName)}} \\\\ \\vspace{1pt}
+    ${addressLine}
+    \\small \\raisebox{-0.1\\height}\\faPhone\\ ${escapeLatex(contact.phone)} ~
+    \\href{mailto:${escapeLatex(contact.email)}}{\\raisebox{-0.2\\height}\\faEnvelope\\ \\underline{${escapeLatex(contact.email)}}} ~
+    \\href{${escapeLatex(linkedin.url)}}{\\raisebox{-0.2\\height}\\faLinkedin\\ \\underline{${escapeLatex(linkedin.label)}}}  ~
+    \\href{${escapeLatex(github.url)}}{\\raisebox{-0.2\\height}\\faGithub\\ \\underline{${escapeLatex(github.label)}}}
+    \\vspace{-8pt}
+\\end{center}
+
+`;
+}
+
+function loadPreamble(): string {
+  const templatePath = path.join(process.cwd(), 'tex', 'resume-template.tex');
+  if (!fs.existsSync(templatePath)) {
+    throw new Error('Missing tex/resume-template.tex');
+  }
+
+  return fs
+    .readFileSync(templatePath, 'utf-8')
+    .replace('\\input{glyphtounicode}\n', '')
+    .trimEnd();
+}
+
+export function generateLatex(resume: TailoredResume, contact: ContactInfo): string {
+  const preamble = loadPreamble();
+  const body = [
+    headingSection(contact),
+    educationSection(resume.education ?? []),
+    experienceSection(resume.experience ?? []),
+    projectsSection(resume.projects ?? []),
+    skillsSection(resume.skills ?? {}),
+    leadershipSection(resume.leadership),
+    '\\end{document}',
+  ].join('\n');
+
+  return `${preamble}\n\n\\begin{document}\n\n${body}\n`;
+}
+
+export const CONTACT_FIELD_LABELS: Record<keyof ContactInfo, string> = {
+  fullName: 'full name',
+  address: 'street address, city, state ZIP',
+  phone: 'phone number',
+  email: 'email address',
+  linkedin: 'LinkedIn profile (e.g. linkedin.com/in/yourhandle)',
+  github: 'GitHub profile (e.g. github.com/yourhandle)',
+};
+
+export const REQUIRED_CONTACT_FIELDS: (keyof ContactInfo)[] = [
+  'fullName',
+  'phone',
+  'email',
+  'linkedin',
+  'github',
+];
+
+export function missingContactFields(contact: Partial<ContactInfo>): (keyof ContactInfo)[] {
+  return REQUIRED_CONTACT_FIELDS.filter((field) => !contact[field]?.trim());
 }

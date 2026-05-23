@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { TailoredResume } from '../types/resume';
 
 export type AppStep = 'connect' | 'analyze' | 'enrich' | 'tailor' | 'export';
 
@@ -41,7 +42,7 @@ export interface AppState {
   jobDescription: string;
   generatedTex: string;
   originalTex: string;
-  tailoredResume: object | null;
+  tailoredResume: TailoredResume | null;
   atsMatchPercent: number;
 }
 

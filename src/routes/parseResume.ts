@@ -7,6 +7,7 @@ import { User } from '../db/entities/User';
 import { ResumeSession } from '../db/entities/ResumeSession';
 import { AppDataSource } from '../db/dataSource';
 import { getOrCreateResumeSession } from '../lib/sessions';
+import { extractContactFromResume } from '../lib/extractContact';
 
 const router = Router();
 const upload = multer({
@@ -40,14 +41,40 @@ router.post(
         return;
       }
 
+      if (!text.trim()) {
+        res.status(422).json({
+          error: 'Could not read text from this file. Try a different PDF or DOCX.',
+        });
+        return;
+      }
+
       const user = req.user as User;
       const session = await getOrCreateResumeSession(user);
       session.uploadedResumeText = text;
+      session.uploadedResumeFilename = file.originalname;
+
+      let contactInfo = session.contactInfo;
+      let missingFields: string[] = [];
+
+      try {
+        const extracted = await extractContactFromResume(text, session.contactInfo, user.username);
+        contactInfo = extracted.contactInfo;
+        missingFields = extracted.missingFields;
+        session.contactInfo = contactInfo;
+      } catch (err) {
+        console.warn('[parse-resume] Contact extraction failed:', err);
+      }
+
       await AppDataSource.getRepository(ResumeSession).save(session);
 
       console.log('[parse-resume] Parsed', file.originalname, `(${text.length} chars)`);
 
-      res.json({ text, filename: file.originalname });
+      res.json({
+        text,
+        filename: file.originalname,
+        contactInfo: contactInfo ?? null,
+        missingFields,
+      });
     } catch (err) {
       next(err);
     }

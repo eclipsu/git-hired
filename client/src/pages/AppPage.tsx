@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AnalyzeLoading from '../components/ui/AnalyzeLoading';
 import AppBackground from '../components/app/AppBackground';
 import AppNav from '../components/app/AppNav';
 import StepAnalyze from '../components/app/StepAnalyze';
@@ -13,7 +14,10 @@ import {
   type BulletItem,
   type RepoItem,
 } from '../hooks/useAppState';
+import { useContactChat } from '../hooks/useContactChat';
 import { computeAtsMatch } from '../utils/atsMatch';
+import type { ContactInfo } from '../types/contact';
+import type { TailoredResume } from '../types/resume';
 
 function stepIndex(step: AppStep): number {
   return STEP_ORDER.indexOf(step);
@@ -35,18 +39,48 @@ function bulletsFromResponse(
       });
     });
   });
-  console.log('[app] Bullets loaded:', items.length);
   return items;
+}
+
+interface SessionPayload {
+  selectedRepos: string[];
+  bullets: Record<string, string[]>;
+  displayNames: Record<string, string>;
+  uploadedResumeText: string | null;
+  uploadedResumeFilename: string | null;
+  userNotes: string;
+  contactInfo: ContactInfo | null;
+  generatedTex: string | null;
+  tailoredResume: TailoredResume | null;
+  jobDescription?: string;
 }
 
 export default function AppPage() {
   const navigate = useNavigate();
   const { state, setStep, patch } = useAppState();
   const [reposLoading, setReposLoading] = useState(true);
+  const [reposFromCache, setReposFromCache] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeCacheHint, setAnalyzeCacheHint] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sessionLoaded = useRef(false);
+  const savedContactRef = useRef<ContactInfo | null>(null);
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const {
+    contactInfo,
+    messages: chatMessages,
+    pendingField: pendingChatField,
+    extracting: extractingProfile,
+    complete: contactComplete,
+    initContactFromResume,
+    resetContactInit,
+    applyParsedContact,
+    sendMessage: onChatSend,
+    updateField: onContactFieldChange,
+  } = useContactChat(state.user?.username);
 
   const completedSteps = useMemo(() => {
     const idx = stepIndex(state.step);
@@ -69,26 +103,103 @@ export default function AppPage() {
   }, [navigate, patch]);
 
   useEffect(() => {
+    if (!state.user || sessionLoaded.current) return;
+
+    fetch('/api/session', { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return res.json() as Promise<SessionPayload>;
+      })
+      .then((session) => {
+        if (!session) return;
+
+        if (session.bullets && Object.keys(session.bullets).length > 0) {
+          patch({
+            bullets: bulletsFromResponse(session.bullets, session.displayNames ?? {}),
+          });
+        }
+
+        savedContactRef.current = session.contactInfo;
+
+        if (session.uploadedResumeText) {
+          patch({
+            parsedResume: {
+              text: session.uploadedResumeText,
+              filename: session.uploadedResumeFilename ?? 'resume.pdf',
+            },
+          });
+          initContactFromResume(
+            session.contactInfo,
+            session.uploadedResumeText,
+            true,
+          );
+        }
+
+        if (session.userNotes) {
+          patch({ notes: session.userNotes });
+        }
+
+        if (session.generatedTex) {
+          patch({
+            generatedTex: session.generatedTex,
+            originalTex: session.generatedTex,
+          });
+        }
+
+        if (session.tailoredResume) {
+          patch({ tailoredResume: session.tailoredResume });
+        }
+
+        if (session.jobDescription) {
+          patch({ jobDescription: session.jobDescription });
+        }
+
+        sessionLoaded.current = true;
+      })
+      .catch(() => {});
+  }, [state.user, patch, initContactFromResume]);
+
+  useEffect(() => {
+    if (state.step !== 'enrich' || !state.parsedResume?.text) return;
+    initContactFromResume(savedContactRef.current, state.parsedResume.text);
+  }, [state.step, state.parsedResume?.text, initContactFromResume]);
+
+  useEffect(() => {
     if (!state.user) return;
     setReposLoading(true);
+
     fetch('/api/repos', { credentials: 'include' })
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to load repositories');
-        return res.json() as Promise<
-          {
+        return res.json() as Promise<{
+          repos: {
             name: string;
             description: string | null;
             primaryLanguage: string | null;
             stars: number;
             commitCount: number;
-          }[]
-        >;
+          }[];
+          fromCache: boolean;
+        }>;
       })
-      .then((data) => {
-        const repos: RepoItem[] = data.map((r, i) => ({
+      .then(async (data) => {
+        setReposFromCache(data.fromCache);
+
+        let selectedNames: string[] = [];
+        try {
+          const sessionRes = await fetch('/api/session', { credentials: 'include' });
+          if (sessionRes.ok) {
+            const session = (await sessionRes.json()) as SessionPayload;
+            selectedNames = session.selectedRepos ?? [];
+          }
+        } catch {
+          selectedNames = [];
+        }
+
+        const repos: RepoItem[] = data.repos.map((r, i) => ({
           ...r,
           displayName: r.name,
-          selected: i < 6,
+          selected: selectedNames.length > 0 ? selectedNames.includes(r.name) : i < 6,
         }));
         patch({ repos });
       })
@@ -118,12 +229,29 @@ export default function AppPage() {
     [patch, state.repos],
   );
 
+  const handleNotesChange = useCallback(
+    (notes: string) => {
+      patch({ notes });
+      clearTimeout(notesTimer.current);
+      notesTimer.current = setTimeout(() => {
+        fetch('/api/session/notes', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes }),
+        }).catch(() => {});
+      }, 500);
+    },
+    [patch],
+  );
+
   const handleAnalyze = async () => {
     const selected = state.repos.filter((r) => r.selected);
     if (selected.length === 0) return;
 
     setAnalyzing(true);
     setError(null);
+    setAnalyzeCacheHint(null);
 
     try {
       const res = await fetch('/api/analyze', {
@@ -140,10 +268,20 @@ export default function AppPage() {
         throw new Error(body.error ?? 'Analysis failed');
       }
 
-      const { bullets, displayNames } = (await res.json()) as {
+      const { bullets, displayNames, cachedRepos, analyzedRepos } = (await res.json()) as {
         bullets: Record<string, string[]>;
         displayNames: Record<string, string>;
+        cachedRepos?: string[];
+        analyzedRepos?: string[];
       };
+
+      if (cachedRepos?.length && !analyzedRepos?.length) {
+        setAnalyzeCacheHint('Loaded bullets from cache — no GitHub or AI calls needed.');
+      } else if (cachedRepos?.length && analyzedRepos?.length) {
+        setAnalyzeCacheHint(
+          `Used cache for ${cachedRepos.length} repo(s), analyzed ${analyzedRepos.length} changed repo(s).`,
+        );
+      }
 
       const items = bulletsFromResponse(bullets, displayNames);
       patch({ bullets: items });
@@ -170,8 +308,15 @@ export default function AppPage() {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? 'Parse failed');
       }
-      const { text, filename } = (await res.json()) as { text: string; filename: string };
+      const { text, filename, contactInfo: extractedContact } = (await res.json()) as {
+        text: string;
+        filename: string;
+        contactInfo?: ContactInfo | null;
+      };
+      resetContactInit();
       patch({ parsedResume: { text, filename } });
+      savedContactRef.current = extractedContact ?? null;
+      applyParsedContact(extractedContact, text);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Parse failed');
     } finally {
@@ -195,6 +340,7 @@ export default function AppPage() {
           notes: state.notes,
           parsedResumeText: state.parsedResume?.text,
           jobDescription: state.jobDescription,
+          contactInfo,
         }),
       });
 
@@ -247,17 +393,21 @@ export default function AppPage() {
         </div>
       )}
 
-      <div key={state.step} className={transitionClass}>
-        {state.step === 'analyze' && (
+      <div key={analyzing ? 'loading' : state.step} className={transitionClass}>
+        {state.step === 'analyze' && analyzing ? (
+          <AnalyzeLoading active={analyzing} />
+        ) : state.step === 'analyze' ? (
           <StepAnalyze
             repos={state.repos}
             loading={reposLoading}
             analyzing={analyzing}
+            fromCache={reposFromCache}
+            cacheHint={analyzeCacheHint}
             onToggle={toggleRepo}
             onDisplayNameChange={setDisplayName}
             onAnalyze={handleAnalyze}
           />
-        )}
+        ) : null}
 
         {state.step === 'enrich' && (
           <StepEnrich
@@ -265,6 +415,11 @@ export default function AppPage() {
             notes={state.notes}
             parsedResume={state.parsedResume}
             parsing={parsing}
+            contactInfo={contactInfo}
+            chatMessages={chatMessages}
+            pendingChatField={pendingChatField}
+            extractingProfile={extractingProfile}
+            contactComplete={contactComplete}
             onToggleBullet={(id) =>
               patch({
                 bullets: state.bullets.map((b) =>
@@ -272,8 +427,10 @@ export default function AppPage() {
                 ),
               })
             }
-            onNotesChange={(notes) => patch({ notes })}
+            onNotesChange={handleNotesChange}
             onFileSelect={handleParseResume}
+            onContactFieldChange={onContactFieldChange}
+            onChatSend={onChatSend}
             onContinue={() => setStep('tailor')}
           />
         )}
@@ -282,6 +439,7 @@ export default function AppPage() {
           <StepTailor
             jobDescription={state.jobDescription}
             bullets={state.bullets}
+            contactInfo={contactInfo}
             generating={generating}
             onJobDescriptionChange={(jobDescription) => patch({ jobDescription })}
             onGenerate={handleTailor}
@@ -291,10 +449,11 @@ export default function AppPage() {
         {state.step === 'export' && (
           <StepExport
             tex={state.generatedTex}
-            originalTex={state.originalTex}
             atsMatchPercent={state.atsMatchPercent}
             bullets={state.bullets}
-            onTexChange={(generatedTex) => patch({ generatedTex })}
+            tailoredResume={state.tailoredResume}
+            jobDescription={state.jobDescription}
+            contactInfo={contactInfo}
             onRetailer={() => setStep('tailor')}
             onCompile={handleCompile}
           />
