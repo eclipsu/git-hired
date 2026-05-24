@@ -2,11 +2,11 @@
     "rewrites": [
       {
         "source": "/api/:path*",
-        "destination": "http://3.150.110.6:4000/api/:path*"
+        "destination": "http://3.18.223.218:4000/api/:path*"
       },
       {
         "source": "/auth/:path*",
-        "destination": "http://3.150.110.6:4000/auth/:path*"
+        "destination": "http://3.18.223.218:4000/auth/:path*"
       }
     ]
 }
