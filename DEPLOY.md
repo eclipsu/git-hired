@@ -112,7 +112,7 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | OAuth redirects to wrong place | `FRONTEND_URL` + GitHub callback must match Vercel URL exactly |
 | 401 on all API calls after login | Ensure `trust proxy` is set (production) and you use **HTTPS Vercel URL** |
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
-| Docker build fails on `texlive-fonts-extra` | **Disk full** on t3.micro (~8 GB). Run `df -h`, then `docker system prune -af`, pull latest (fonts-extra removed from Dockerfile), rebuild. |
+| Docker build stuck at `npm run build` | t3.micro OOM/slow — pull latest (prod Docker skips client/Vite build). Add swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` |
 | PDF compile fails | Check `docker compose logs`; ensure `tex/` is in image (rebuild) |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |
 
