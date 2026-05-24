@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 
 const INSTALL_HINT =
-  'Install LaTeX: sudo apt install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra';
+  'Install LaTeX: sudo apt install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended';
 
 export function isPdflatexAvailable(): boolean {
   try {
@@ -13,5 +13,5 @@ export function isPdflatexAvailable(): boolean {
 }
 
 export function pdflatexErrorMessage(): string {
-  return `pdflatex is not installed on this machine. ${INSTALL_HINT} (also needs texlive-fonts-extra for fontawesome5)`;
+  return `pdflatex is not installed on this machine. ${INSTALL_HINT}`;
 }

@@ -21,7 +21,7 @@ Turn your GitHub activity into an ATS-optimized resume. Connect GitHub, select r
 For PDF export outside Docker:
 
 ```bash
-sudo apt install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra
+sudo apt install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
 ```
 
 ## Setup

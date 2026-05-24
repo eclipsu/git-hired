@@ -8,10 +8,10 @@ RUN apt-get update \
     make \
     g++ \
     texlive-latex-base \
+    texlive-latex-recommended \
     texlive-latex-extra \
     texlive-fonts-recommended \
-    texlive-fonts-extra \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /app
 
