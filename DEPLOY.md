@@ -26,8 +26,12 @@ Browser → https://your-app.vercel.app
 - [ ] Attach an **Elastic IP** (so Vercel rewrites don’t break when instance reboots)
 - [ ] Security group: open **22** (SSH, your IP) and **4000** (HTTP from internet)
 - [ ] Install Docker + Docker Compose
-- [ ] Clone repo, create `.env` from `.env.example`
-- [ ] Set production env (see below)
+- [ ] Clone repo, create `.env` from template:
+  ```bash
+  cp .env.production.example .env
+  nano .env
+  ```
+  **`.env` is not in git** — you must create it on the server.
 - [ ] Run: `docker compose --profile prod up -d --build`
 - [ ] Verify: `curl http://localhost:4000/api/health` → `{"ok":true}`
 - [ ] Optional: add **swap** (1–2 GB) if PDF compile runs out of memory on t3.micro
@@ -36,6 +40,7 @@ Browser → https://your-app.vercel.app
 
 - [ ] Import repo → **Root Directory:** `client`
 - [ ] Build: `npm run build` → Output: `dist`
+- [ ] **Environment variables on Vercel: not required** (API runs on EC2; rewrites handle `/api` and `/auth`)
 - [ ] Update `client/vercel.json` → set your **Elastic IP** and port **4000**
 - [ ] Deploy → note URL: `https://YOUR-PROJECT.vercel.app`
 
@@ -77,8 +82,8 @@ Restart container after editing: `docker compose --profile prod up -d --build`
 ```bash
 git clone https://github.com/eclipsu/git-hired.git
 cd git-hired
-cp .env.example .env
-nano .env   # fill in values above
+cp .env.production.example .env
+nano .env   # fill in values — required before docker will work
 
 docker compose --profile prod up -d --build
 docker compose logs -f app-prod
@@ -90,6 +95,10 @@ docker compose logs -f app-prod
 
 | Problem | Fix |
 |---------|-----|
+| **"no env" / `.env` not found** | On EC2 run `cp .env.production.example .env` and fill in all values. `.env` is gitignored — it is never cloned from GitHub. |
+| Docker warns `env file .env not found` | Same as above — create `.env` in repo root on EC2 |
+| Vercel shows no environment variables | **OK for frontend-only deploy** — secrets go in EC2 `.env`, not Vercel |
+| Container exits immediately | `docker compose logs app-prod` — likely missing env vars (see above) |
 | OAuth redirects to wrong place | `FRONTEND_URL` + GitHub callback must match Vercel URL exactly |
 | 401 on all API calls after login | Ensure `trust proxy` is set (production) and you use **HTTPS Vercel URL** |
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |

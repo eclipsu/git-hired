@@ -26,11 +26,38 @@ import { isPdflatexAvailable, pdflatexErrorMessage } from './lib/pdflatex';
 
 dotenv.config();
 
+const REQUIRED_ENV = [
+  'GITHUB_CLIENT_ID',
+  'GITHUB_CLIENT_SECRET',
+  'GITHUB_CALLBACK_URL',
+  'SESSION_SECRET',
+  'ENCRYPTION_KEY',
+  'GEMINI_API_KEY',
+  'FRONTEND_URL',
+] as const;
+
+function assertRequiredEnv(): void {
+  const missing = REQUIRED_ENV.filter((key) => !process.env[key]?.trim());
+  if (missing.length === 0) return;
+
+  console.error('\n[env] Missing required environment variables:\n');
+  for (const key of missing) {
+    console.error(`  - ${key}`);
+  }
+  console.error(
+    '\nOn EC2: cp .env.production.example .env && nano .env\n' +
+      'Then restart: docker compose --profile prod up -d --build\n',
+  );
+  process.exit(1);
+}
+
 const SQLiteStore = connectSqlite3(session);
 const PORT = Number(process.env.PORT) || 4000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 async function main() {
+  assertRequiredEnv();
+
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
