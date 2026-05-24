@@ -27,7 +27,7 @@ import { isPdflatexAvailable, pdflatexErrorMessage } from './lib/pdflatex';
 dotenv.config();
 
 const SQLiteStore = connectSqlite3(session);
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 4000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 async function main() {
@@ -42,6 +42,11 @@ async function main() {
   configurePassport();
 
   const app = express();
+
+  // Required when behind Vercel rewrites (OAuth cookies + secure session)
+  if (isProduction) {
+    app.set('trust proxy', 1);
+  }
 
   app.use(helmet());
   app.use(express.json());
@@ -58,6 +63,7 @@ async function main() {
       cookie: {
         secure: isProduction,
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       },
     }),

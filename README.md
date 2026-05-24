@@ -1,6 +1,8 @@
 # GitHired
 
-Turn your GitHub activity into an ATS-optimized resume. Connect GitHub, select repositories, generate AI-powered bullet points, tailor to a job description, edit LaTeX in-browser, and export PDF.
+Turn your GitHub activity into an ATS-optimized resume. Connect GitHub, select repositories, generate AI-powered bullet points, tailor to a job description, and export a Jake LaTeX PDF.
+
+**Deploy:** [DEPLOY.md](./DEPLOY.md) — Vercel frontend + EC2 backend (free tier, no domain).
 
 ## Stack
 

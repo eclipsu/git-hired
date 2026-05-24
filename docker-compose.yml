@@ -31,14 +31,12 @@ services:
     profiles:
       - prod
     ports:
-      - "3000:3000"
+      - "4000:4000"
     env_file:
       - .env
     environment:
       NODE_ENV: production
-      PORT: 3000
-      FRONTEND_URL: ""
-      GITHUB_CALLBACK_URL: http://localhost:3000/auth/github/callback
+      PORT: 4000
     volumes:
       - app_data:/app/data
     restart: unless-stopped
