@@ -48,7 +48,13 @@ export default function Landing() {
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="cursor-pointer text-lg font-bold text-gray-900">GitHired</span>
+          <span className="cursor-pointer text-lg font-bold text-gray-900">
+            <span className="cursor-pointer">
+              <Link to="/dashboard">
+              GitHired
+              </Link>
+            </span>
+          </span>
           <nav className="hidden items-center gap-8 text-sm text-gray-500 md:flex">
             <a href="#how-it-works" className="cursor-pointer hover:text-gray-900">How it works</a>
             <a href="#features" className="cursor-pointer hover:text-gray-900">Features</a>
