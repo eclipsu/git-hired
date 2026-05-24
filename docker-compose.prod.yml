@@ -1,0 +1,23 @@
+# Production-only compose (no --profile flag needed).
+# Usage: docker-compose -f docker-compose.prod.yml up -d --build
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: git-hired-prod
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  app_data:

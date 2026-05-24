@@ -5,6 +5,8 @@ client/node_modules/
 client/tsconfig.tsbuildinfo
 data/
 .env
+.env.ec2
+env.ec2.copy
 *.db
 *.log
 .DS_Store

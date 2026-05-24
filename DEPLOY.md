@@ -32,7 +32,8 @@ Browser → https://your-app.vercel.app
   nano .env
   ```
   **`.env` is not in git** — you must create it on the server.
-- [ ] Run: `docker compose --profile prod up -d --build`
+- [ ] Run: `docker-compose -f docker-compose.prod.yml up -d --build`
+  (or `./scripts/ec2-deploy.sh` — no `--profile` flag needed)
 - [ ] Verify: `curl http://localhost:4000/api/health` → `{"ok":true}`
 - [ ] Optional: add **swap** (1–2 GB) if PDF compile runs out of memory on t3.micro
 
@@ -61,7 +62,7 @@ SESSION_SECRET=...    # openssl rand -hex 32
 ENCRYPTION_KEY=...    # openssl rand -hex 32
 ```
 
-Restart container after editing: `docker compose --profile prod up -d --build`
+Restart container after editing: `docker-compose -f docker-compose.prod.yml up -d --build`
 
 #### 4. GitHub OAuth app
 
@@ -85,8 +86,17 @@ cd git-hired
 cp .env.production.example .env
 nano .env   # fill in values — required before docker will work
 
-docker compose --profile prod up -d --build
-docker compose logs -f app-prod
+# Install standalone compose if needed (Amazon Linux):
+# sudo curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 \
+#   -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+
+# Option A — helper script
+chmod +x scripts/ec2-deploy.sh
+sudo ./scripts/ec2-deploy.sh
+
+# Option B — direct (no --profile flag)
+sudo docker-compose -f docker-compose.prod.yml up -d --build
+sudo docker-compose -f docker-compose.prod.yml logs -f app
 ```
 
 ---
@@ -98,7 +108,7 @@ docker compose logs -f app-prod
 | **"no env" / `.env` not found** | On EC2 run `cp .env.production.example .env` and fill in all values. `.env` is gitignored — it is never cloned from GitHub. |
 | Docker warns `env file .env not found` | Same as above — create `.env` in repo root on EC2 |
 | Vercel shows no environment variables | **OK for frontend-only deploy** — secrets go in EC2 `.env`, not Vercel |
-| Container exits immediately | `docker compose logs app-prod` — likely missing env vars (see above) |
+| Container exits immediately | `docker-compose -f docker-compose.prod.yml logs app` — likely missing env vars |
 | OAuth redirects to wrong place | `FRONTEND_URL` + GitHub callback must match Vercel URL exactly |
 | 401 on all API calls after login | Ensure `trust proxy` is set (production) and you use **HTTPS Vercel URL** |
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
