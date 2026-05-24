@@ -49,7 +49,7 @@ npm run docker:dev            # dev — ports 5173 + 3000, includes TeX Live
 npm run docker:prod           # production — port 3000 only
 ```
 
-The Docker image includes `pdflatex`, `moderncv`, and `fontawesome5` — no local LaTeX install needed.
+The Docker image includes `pdflatex` and the Jake resume TeX packages — no local LaTeX install needed.
 
 ## App flow
 

@@ -15,7 +15,7 @@ import {
   type RepoItem,
 } from '../hooks/useAppState';
 import { useContactChat } from '../hooks/useContactChat';
-import { computeAtsMatch } from '../utils/atsMatch';
+import { computeAtsMatch, tailoredResumeToText } from '../utils/atsMatch';
 import type { ContactInfo } from '../types/contact';
 import type { TailoredResume } from '../types/resume';
 
@@ -327,8 +327,6 @@ export default function AppPage() {
   const handleTailor = async () => {
     setGenerating(true);
     setError(null);
-    const bulletText = state.bullets.filter((b) => b.included).map((b) => b.text).join(' ');
-    const atsMatchPercent = computeAtsMatch(state.jobDescription, bulletText);
 
     try {
       const res = await fetch('/api/tailor', {
@@ -349,10 +347,18 @@ export default function AppPage() {
         throw new Error(body.error ?? 'Tailor failed');
       }
 
-      const { generatedTex } = (await res.json()) as { generatedTex: string };
+      const { generatedTex, tailoredResume } = (await res.json()) as {
+        generatedTex: string;
+        tailoredResume: TailoredResume;
+      };
+      const atsMatchPercent = computeAtsMatch(
+        state.jobDescription,
+        tailoredResumeToText(tailoredResume),
+      );
       patch({
         generatedTex,
         originalTex: generatedTex,
+        tailoredResume,
         atsMatchPercent,
       });
       setStep('export');

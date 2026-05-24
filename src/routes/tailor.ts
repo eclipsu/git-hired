@@ -33,9 +33,13 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     }
 
     const includedBullets = bullets.filter((b) => b.included);
+
+    const session = await getOrCreateResumeSession(user);
+    const resumeText = parsedResumeText?.trim() || session.uploadedResumeText?.trim() || undefined;
+
     const prompt = buildTailorPrompt({
       bullets: includedBullets,
-      parsedResumeText,
+      parsedResumeText: resumeText,
       userNotes: notes,
       jobDescription,
     });
@@ -57,10 +61,9 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       github: contactInfo.github,
     });
 
-    const session = await getOrCreateResumeSession(user);
     session.selectedBullets = bullets;
     session.userNotes = notes ?? '';
-    session.uploadedResumeText = parsedResumeText ?? session.uploadedResumeText;
+    if (resumeText) session.uploadedResumeText = resumeText;
     session.jobDescription = jobDescription ?? '';
     session.contactInfo = contactInfo;
     session.tailoredResume = tailored;

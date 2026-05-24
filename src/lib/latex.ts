@@ -223,10 +223,10 @@ function headingSection(contact: ContactInfo): string {
 \\begin{center}
     {\\Huge \\scshape ${escapeLatex(contact.fullName)}} \\\\ \\vspace{1pt}
     ${addressLine}
-    \\small \\raisebox{-0.1\\height}\\faPhone\\ ${escapeLatex(contact.phone)} ~
-    \\href{mailto:${escapeLatex(contact.email)}}{\\raisebox{-0.2\\height}\\faEnvelope\\ \\underline{${escapeLatex(contact.email)}}} ~
-    \\href{${escapeLatex(linkedin.url)}}{\\raisebox{-0.2\\height}\\faLinkedin\\ \\underline{${escapeLatex(linkedin.label)}}}  ~
-    \\href{${escapeLatex(github.url)}}{\\raisebox{-0.2\\height}\\faGithub\\ \\underline{${escapeLatex(github.label)}}}
+    \\small \\Telefon\\ ${escapeLatex(contact.phone)} ~
+    \\href{mailto:${escapeLatex(contact.email)}}{\\Letter\\ \\underline{${escapeLatex(contact.email)}}} ~
+    \\href{${escapeLatex(linkedin.url)}}{LinkedIn: \\underline{${escapeLatex(linkedin.label)}}}  ~
+    \\href{${escapeLatex(github.url)}}{GitHub: \\underline{${escapeLatex(github.label)}}}
     \\vspace{-8pt}
 \\end{center}
 

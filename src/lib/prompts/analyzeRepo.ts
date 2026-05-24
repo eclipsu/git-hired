@@ -1,6 +1,21 @@
 import { RepoAnalysisData } from '../github';
 
-const SYSTEM_INSTRUCTION = `You are an expert technical resume writer. Given GitHub repository data, generate 2–4 professional resume bullet points. Each bullet must start with a strong past-tense action verb, include specific metrics where inferable, be ATS-optimized, and be 1–2 lines max. Return ONLY raw JSON, no markdown, no preamble: { "repoName": ["bullet 1", "bullet 2"] }`;
+function buildSystemInstruction(repoName: string): string {
+  return `You are an expert technical resume writer. I will give you GitHub data for a repository. Generate 2–4 professional resume bullet points.
+
+Each bullet MUST:
+- Start with a strong past-tense action verb (Architected, Engineered, Implemented, Designed, Automated, Migrated, etc.)
+- Include exact specifics: number of endpoints, entities, modules, strategies, files, steps, retries, limits, etc.
+- Name the actual patterns and technologies used (RBAC, JWT, WebSocket, OAuth, etc.)
+- Include concrete constraints where present (file size caps, token expiry, pagination size, MIME types, permission counts)
+- Be 1–2 lines max, zero filler words ("robust", "comprehensive", "optimized" are banned unless followed by proof)
+
+BAD: "Implemented a robust deployment strategy across Vercel and EC2, including Dockerization."
+GOOD: "Deployed frontend to Vercel and containerized Express backend with Docker on EC2, configuring 3 environment stages and a Nginx reverse proxy routing /api traffic to port 3000."
+
+Return ONLY valid JSON, no markdown fences, no preamble:
+{ "${repoName}": ["bullet 1", "bullet 2", "bullet 3"] }`;
+}
 
 export function buildAnalyzeRepoPrompt(data: RepoAnalysisData): string {
   const languageList = Object.entries(data.languages)
@@ -25,7 +40,9 @@ export function buildAnalyzeRepoPrompt(data: RepoAnalysisData): string {
 
   const readmeExcerpt = data.readme.slice(0, 500);
 
-  return `${SYSTEM_INSTRUCTION}
+  return `${buildSystemInstruction(data.repoName)}
+
+GitHub data:
 
 Repository: ${data.repoName}
 Stars: ${data.stars}
@@ -50,7 +67,11 @@ export function extractBulletsFromResponse(
   }
 
   const obj = parsed as Record<string, unknown>;
-  const bullets = obj[repoName] ?? obj.repoName ?? Object.values(obj)[0];
+  const bullets =
+    obj[repoName] ??
+    obj.repoName ??
+    obj.repo_name ??
+    Object.values(obj)[0];
 
   if (!Array.isArray(bullets) || bullets.some((b) => typeof b !== 'string')) {
     throw new Error('Gemini response missing bullet array');

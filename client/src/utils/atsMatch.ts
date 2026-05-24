@@ -30,3 +30,32 @@ export function computeAtsMatch(jobDescription: string, bulletText: string): num
 
   return Math.min(100, Math.round((overlap / jdWords.size) * 100));
 }
+
+export function tailoredResumeToText(resume: {
+  skills?: Record<string, string[]>;
+  experience?: { bullets: string[]; title?: string; org?: string }[];
+  projects?: { bullets: string[]; name?: string; techStack?: string }[];
+  leadership?: { bullets: string[]; role?: string; org?: string }[];
+}): string {
+  const parts: string[] = [];
+
+  if (resume.skills) {
+    for (const [category, items] of Object.entries(resume.skills)) {
+      parts.push(category, ...items);
+    }
+  }
+
+  for (const entry of resume.experience ?? []) {
+    parts.push(entry.title ?? '', entry.org ?? '', ...entry.bullets);
+  }
+
+  for (const entry of resume.projects ?? []) {
+    parts.push(entry.name ?? '', entry.techStack ?? '', ...entry.bullets);
+  }
+
+  for (const entry of resume.leadership ?? []) {
+    parts.push(entry.role ?? '', entry.org ?? '', ...entry.bullets);
+  }
+
+  return parts.filter(Boolean).join(' ');
+}

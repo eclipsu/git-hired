@@ -114,6 +114,7 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
 | Docker build stuck at `npm run build` | t3.micro OOM/slow — pull latest (prod Docker skips client/Vite build). Add swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` |
 | PDF compile fails | Check `docker compose logs`; ensure `tex/` is in image (rebuild) |
+| Vercel 404 on `/app` or `/connect` | Ensure `vercel.json` has SPA fallback rewrite to `/index.html` |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |
 
 ---
