@@ -14,7 +14,7 @@ Browser → https://your-app.vercel.app
 
 ### Code (repo) — done in this branch
 
-- [x] `client/vercel.json` — rewrites `/api` and `/auth` to EC2
+- [x] `client/vercel.json` — rewrites `/api` and `/auth` to EC2 + SPA fallback for `/app`, `/dashboard`, etc.
 - [x] `src/index.ts` — `trust proxy` in production (session cookies behind Vercel)
 - [x] `Dockerfile` — copies `tex/` for LaTeX PDF generation
 - [x] `docker-compose.yml` — prod profile on port **4000**

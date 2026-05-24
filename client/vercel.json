@@ -1,14 +1,16 @@
 {
-    "rewrites": [
-      {
-        "source": "/api/:path*",
-        "destination": "http://3.18.223.218:4000/api/:path*"
-      },
-      {
-        "source": "/auth/:path*",
-        "destination": "http://3.18.223.218:4000/auth/:path*"
-      }
-    ]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://3.18.223.218:4000/api/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "http://3.18.223.218:4000/auth/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
-
-
