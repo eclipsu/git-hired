@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pencil } from 'lucide-react';
-import { languageColor } from '../../utils/languageColors';
+import { GitHubFlash } from '../github/GitHubBox';
+import GitHubButton from '../github/GitHubButton';
 import type { RepoItem } from '../../hooks/useAppState';
 
 interface StepAnalyzeProps {
@@ -14,15 +14,12 @@ interface StepAnalyzeProps {
   onAnalyze: () => void;
 }
 
-function relativeTime(iso?: string): string {
-  if (!iso) return 'recently';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days < 7) return `${days || 1} days ago`;
-  return `${Math.floor(days / 7)} weeks ago`;
+function relativeTime(): string {
+  return 'recently';
 }
 
 function RepoSkeleton() {
-  return <div className="h-28 animate-pulse rounded-xl border border-gray-200 bg-gray-50" />;
+  return <div className="h-24 animate-pulse rounded-md border border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)]" />;
 }
 
 function EditableDisplayName({
@@ -46,7 +43,7 @@ function EditableDisplayName({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => { onChange(draft.trim() || value); setEditing(false); }}
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-        className="mt-1 w-full rounded border border-gray-200 px-2 py-1 text-xs"
+        className="gh-input mt-1 !py-1 text-xs"
       />
     );
   }
@@ -56,10 +53,9 @@ function EditableDisplayName({
       type="button"
       disabled={disabled}
       onClick={() => setEditing(true)}
-      className="group mt-1 flex cursor-pointer items-center gap-1 text-left text-xs text-gray-500 hover:text-gray-900 disabled:cursor-not-allowed"
+      className="mt-1 flex cursor-pointer items-center gap-1 text-left text-xs text-[var(--gh-fg-muted)] hover:text-[var(--gh-accent-fg)] disabled:opacity-50"
     >
-      <span>{value}</span>
-      <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+      {value} <span className="opacity-60">✎</span>
     </button>
   );
 }
@@ -77,64 +73,49 @@ export default function StepAnalyze({
   const selectedCount = repos.filter((r) => r.selected).length;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 lg:px-6">
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">Select projects</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Choose repositories to include on your resume.
-          {fromCache && !loading && (
-            <span className="ml-2 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-[#7C3AED]">
-              Loaded from cache
-            </span>
-          )}
+    <div className="gh-container-wide py-6">
+      <div className="gh-page-header !border-0 !pb-4">
+        <h2 className="gh-page-title !text-xl">Select repositories</h2>
+        <p className="gh-page-desc">
+          Choose which projects to include on your resume.
+          {fromCache && !loading && <span className="gh-label gh-label-accent ml-2">Cached</span>}
         </p>
       </div>
 
-      {cacheHint && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {cacheHint}
-        </div>
-      )}
+      {cacheHint && <GitHubFlash variant="success">{cacheHint}</GitHubFlash>}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {loading
           ? Array.from({ length: 5 }).map((_, i) => <RepoSkeleton key={i} />)
           : repos.map((repo) => (
               <label
                 key={repo.name}
-                className={`flex cursor-pointer items-start gap-4 rounded-xl border bg-white p-4 shadow-sm transition-all ${
-                  repo.selected ? 'border-[#7C3AED] ring-1 ring-[#7C3AED]/20' : 'border-gray-200 hover:border-gray-300'
-                } ${analyzing ? 'pointer-events-none opacity-60' : ''}`}
+                className={`gh-box-row cursor-pointer ${repo.selected ? 'gh-box-row-selected' : ''} ${analyzing ? 'pointer-events-none opacity-60' : ''}`}
               >
                 <input
                   type="checkbox"
                   checked={repo.selected}
                   onChange={() => onToggle(repo.name)}
-                  className="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED]"
+                  className="gh-checkbox mt-1"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900">{repo.name}</h3>
-                    <span className="shrink-0 text-xs text-gray-400">Updated {relativeTime()}</span>
+                    <h3 className="text-sm font-semibold text-[var(--gh-accent-fg)]">{repo.name}</h3>
+                    <span className="shrink-0 text-xs text-[var(--gh-fg-subtle)]">Updated {relativeTime()}</span>
                   </div>
                   <EditableDisplayName
                     value={repo.displayName}
                     onChange={(v) => onDisplayNameChange(repo.name, v)}
                     disabled={analyzing}
                   />
-                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                    {repo.description || 'No description available'}
+                  <p className="mt-1 line-clamp-1 text-xs text-[var(--gh-fg-muted)]">
+                    {repo.description || 'No description'}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--gh-fg-muted)]">
                     {repo.primaryLanguage && (
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
-                        style={{ backgroundColor: languageColor(repo.primaryLanguage) }}
-                      >
-                        {repo.primaryLanguage}
-                      </span>
+                      <span className="gh-label gh-label-default">{repo.primaryLanguage}</span>
                     )}
-                    <span className="text-xs text-gray-400">{repo.commitCount} commits · ★ {repo.stars}</span>
+                    <span>{repo.commitCount} commits · ★ {repo.stars}</span>
                   </div>
                 </div>
               </label>
@@ -142,14 +123,9 @@ export default function StepAnalyze({
       </div>
 
       <div className="fixed bottom-6 right-6 z-30">
-        <button
-          type="button"
-          disabled={analyzing || selectedCount === 0 || loading}
-          onClick={onAnalyze}
-          className="btn-accent shadow-lg"
-        >
-          {analyzing ? 'Analyzing…' : `Generate Resume →`}
-        </button>
+        <GitHubButton variant="primary" disabled={analyzing || selectedCount === 0 || loading} onClick={onAnalyze}>
+          {analyzing ? 'Analyzing…' : `Analyze ${selectedCount} repos`}
+        </GitHubButton>
       </div>
     </div>
   );

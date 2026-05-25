@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import GitHubBox from '../components/github/GitHubBox';
+import { GitHubLabel } from '../components/github/GitHubBox';
 import Spinner from '../components/ui/Spinner';
 
 interface DashboardStats {
@@ -42,56 +44,47 @@ export default function Dashboard() {
   }
 
   const cards = [
-    { label: 'Repositories Analyzed', value: stats?.reposAnalyzed ?? 0, color: 'text-[#7C3AED]' },
-    { label: 'Commits Analyzed', value: stats?.commitsAnalyzed ?? 0, color: 'text-emerald-600' },
-    { label: 'Technologies Detected', value: stats?.technologiesDetected ?? 0, color: 'text-[#7C3AED]' },
-    { label: 'Projects Selected', value: Object.values(selected).filter(Boolean).length, color: 'text-blue-600' },
+    { label: 'Repositories', value: stats?.reposAnalyzed ?? 0 },
+    { label: 'Commits analyzed', value: stats?.commitsAnalyzed ?? 0 },
+    { label: 'Technologies', value: stats?.technologiesDetected ?? 0 },
+    { label: 'Selected', value: Object.values(selected).filter(Boolean).length },
   ];
 
   return (
-    <div className="relative pb-20">
+    <div className="pb-16">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className={`text-3xl font-bold ${c.color}`}>{c.value}</p>
-            <p className="mt-1 text-sm text-gray-500">{c.label}</p>
-          </div>
+          <GitHubBox key={c.label}>
+            <p className="text-2xl font-semibold text-[var(--gh-fg-default)]">{c.value}</p>
+            <p className="mt-1 text-sm text-[var(--gh-fg-muted)]">{c.label}</p>
+          </GitHubBox>
         ))}
       </div>
 
-      <section className="mt-8 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Top Projects Detected</h3>
-          <Link to="/app" className="cursor-pointer text-sm font-medium text-[#7C3AED] hover:underline">View all</Link>
+      <GitHubBox className="mt-6">
+        <div className="gh-box-header">
+          <h3 className="gh-box-title">Top repositories</h3>
+          <Link to="/app" className="gh-link text-sm">View all</Link>
         </div>
-        <ul className="space-y-3">
+        <ul className="divide-y divide-[var(--gh-border-muted)]">
           {(stats?.topProjects ?? []).map((p) => (
-            <li key={p.name} className="flex cursor-pointer items-start gap-4 rounded-xl border border-gray-100 p-4 hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={selected[p.name] ?? false}
-                onChange={() => setSelected((s) => ({ ...s, [p.name]: !s[p.name] }))}
-                className="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-[#7C3AED]"
-              />
+            <li key={p.name} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+              <input type="checkbox" checked={selected[p.name] ?? false} onChange={() => setSelected((s) => ({ ...s, [p.name]: !s[p.name] }))} className="gh-checkbox mt-1" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-gray-900">{p.name}</p>
-                  <span className="shrink-0 text-xs text-gray-400">Updated {relativeTime(p.updatedAt)}</span>
+                  <p className="text-sm font-semibold text-[var(--gh-accent-fg)]">{p.name}</p>
+                  <span className="shrink-0 text-xs text-[var(--gh-fg-subtle)]">{relativeTime(p.updatedAt)}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-gray-500">{p.description || 'No description'}</p>
-                {p.primaryLanguage && (
-                  <span className="mt-2 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    {p.primaryLanguage}
-                  </span>
-                )}
+                <p className="mt-0.5 text-xs text-[var(--gh-fg-muted)]">{p.description || 'No description'}</p>
+                {p.primaryLanguage && <GitHubLabel variant="success">{p.primaryLanguage}</GitHubLabel>}
               </div>
             </li>
           ))}
         </ul>
-      </section>
+      </GitHubBox>
 
       <div className="fixed bottom-6 right-6">
-        <Link to="/app" className="btn-accent shadow-lg">Generate Resume →</Link>
+        <Link to="/app" className="btn-primary">Build resume</Link>
       </div>
     </div>
   );

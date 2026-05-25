@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import {
   BarChart3,
   FileText,
-  FolderGit2,
   LayoutDashboard,
   LogOut,
   Sparkles,
 } from 'lucide-react';
+import GitHubHeader from '../github/GitHubHeader';
 
 interface UserProfile {
   username: string;
@@ -18,18 +18,17 @@ export interface DashboardOutletContext {
   user: UserProfile | null;
 }
 
-const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/app', label: 'My Resume', icon: FileText },
-  { to: '/dashboard/versions', label: 'Tailored Resumes', icon: Sparkles },
-  { to: '/dashboard', label: 'Projects', icon: FolderGit2, end: true },
+const SIDEBAR = [
+  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/app', label: 'Resume builder', icon: FileText },
+  { to: '/dashboard/versions', label: 'Saved versions', icon: Sparkles },
   { to: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
-const PAGE_SUBTITLES: Record<string, string> = {
-  '/dashboard': "Here's your GitHub summary",
-  '/dashboard/versions': 'All saved resume versions',
-  '/dashboard/analytics': 'Track clicks on your shared resume links',
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Overview',
+  '/dashboard/versions': 'Saved versions',
+  '/dashboard/analytics': 'Analytics',
 };
 
 export default function DashboardLayout() {
@@ -47,53 +46,77 @@ export default function DashboardLayout() {
       .catch(() => navigate('/connect'));
   }, [navigate]);
 
-  const subtitle = PAGE_SUBTITLES[location.pathname] ?? "Manage your resumes";
+  const pageTitle = PAGE_TITLES[location.pathname] ?? 'Dashboard';
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white px-3 py-6 md:flex">
-        <h1 className="px-3 text-lg font-bold text-gray-900">GitHired</h1>
-        <nav className="mt-8 flex-1 space-y-0.5">
-          {NAV.map((item) => (
-            <NavLink
-              key={`${item.to}-${item.label}`}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive && item.label !== 'Projects'
-                    ? 'bg-purple-50 text-[#7C3AED]'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`
-              }
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <a href="/auth/logout" className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900">
-          <LogOut className="h-4 w-4" />
-          Log out
-        </a>
-      </aside>
+    <div className="gh-page">
+      <GitHubHeader
+        right={
+          user ? (
+            <img src={user.avatarUrl} alt="" className="gh-avatar" />
+          ) : null
+        }
+      />
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-5">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Welcome back{user ? `, ${user.username}` : ''} 👋
-            </h2>
-            <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
-          </div>
+      <div className="gh-layout">
+        <aside className="gh-sidebar hidden md:block">
           {user && (
-            <img src={user.avatarUrl} alt="" className="h-10 w-10 cursor-pointer rounded-full ring-2 ring-purple-100" />
+            <div className="mb-4 flex items-center gap-3 px-3">
+              <img src={user.avatarUrl} alt="" className="gh-avatar" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{user.username}</p>
+                <p className="text-xs text-[var(--gh-fg-muted)]">Your account</p>
+              </div>
+            </div>
           )}
-        </header>
-        <main className="flex-1 p-6">
+          <nav className="gh-sidebar-nav">
+            {SIDEBAR.map((item) => (
+              <NavLink
+                key={item.to + item.label}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `gh-sidebar-item${isActive ? ' gh-sidebar-item-active' : ''}`
+                }
+              >
+                <item.icon className="h-4 w-4 shrink-0 text-[var(--gh-fg-muted)]" />
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <a href="/auth/logout" className="gh-sidebar-item mt-4 text-[var(--gh-fg-muted)]">
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </a>
+        </aside>
+
+        <main className="gh-main">
+          <div className="gh-page-header">
+            <h1 className="gh-page-title">{pageTitle}</h1>
+            {user && (
+              <p className="gh-page-desc">
+                Signed in as <strong>{user.username}</strong>
+              </p>
+            )}
+          </div>
           <Outlet context={{ user } satisfies DashboardOutletContext} />
         </main>
       </div>
+
+      <nav className="gh-mobile-nav md:hidden">
+        {SIDEBAR.map((item) => (
+          <NavLink
+            key={item.to + item.label}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `gh-btn gh-btn-sm ${isActive ? 'gh-btn-default' : 'gh-btn-invisible'}`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

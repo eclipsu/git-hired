@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react';
+import GitHubBox, { GitHubBoxHeader } from '../github/GitHubBox';
+import GitHubButton from '../github/GitHubButton';
 import type { BulletItem, ProjectMeta } from '../../hooks/useAppState';
 
 interface StepBulletsProps {
@@ -17,12 +18,9 @@ function reindexByRepo(bullets: BulletItem[]): BulletItem[] {
     if (!groups.has(b.repo)) groups.set(b.repo, []);
     groups.get(b.repo)!.push(b);
   }
-
   const result: BulletItem[] = [];
   for (const [repo, items] of groups) {
-    items.forEach((b, i) => {
-      result.push({ ...b, id: `${repo}-${i}` });
-    });
+    items.forEach((b, i) => result.push({ ...b, id: `${repo}-${i}` }));
   }
   return result;
 }
@@ -40,9 +38,7 @@ export default function StepBullets({
   const grouped = useMemo(() => {
     const map = new Map<string, { displayName: string; items: BulletItem[] }>();
     for (const b of bullets) {
-      if (!map.has(b.repo)) {
-        map.set(b.repo, { displayName: b.displayName, items: [] });
-      }
+      if (!map.has(b.repo)) map.set(b.repo, { displayName: b.displayName, items: [] });
       map.get(b.repo)!.items.push(b);
     }
     return [...map.entries()];
@@ -62,159 +58,95 @@ export default function StepBullets({
     const repoBullets = bullets.filter((b) => b.repo === repo);
     const others = bullets.filter((b) => b.repo !== repo);
     const clamped = Math.max(1, Math.min(6, target));
-
     let next = [...repoBullets];
-    while (next.length < clamped) {
-      next.push({
-        id: `${repo}-${next.length}`,
-        text: '',
-        repo,
-        displayName,
-        included: true,
-      });
-    }
-    while (next.length > clamped) {
-      next.pop();
-    }
-
+    while (next.length < clamped) next.push({ id: `${repo}-${next.length}`, text: '', repo, displayName, included: true });
+    while (next.length > clamped) next.pop();
     onChange(reindexByRepo([...others, ...next]));
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 lg:px-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">Review projects & bullets</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Set how many bullets per project, describe what each project does, then edit bullets before tailoring.
-        </p>
+    <div className="gh-container py-6">
+      <div className="gh-page-header !border-0 !pb-4">
+        <h2 className="gh-page-title !text-xl">Review bullets</h2>
+        <p className="gh-page-desc">Edit bullets and add project context before tailoring.</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {grouped.map(([repo, { displayName, items }]) => {
           const meta = projectMeta[repo];
           const readme = meta?.readmeExcerpt ?? '';
           const showReadme = expandedReadme[repo] ?? false;
 
           return (
-            <section key={repo} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{displayName}</h3>
-                  <p className="text-xs text-gray-400">{repo}</p>
-                  {meta?.description && (
-                    <p className="mt-1 text-sm text-gray-600">{meta.description}</p>
-                  )}
-                </div>
-
-                <label className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bullets</span>
-                  <button
-                    type="button"
-                    onClick={() => setRepoCount(repo, displayName, items.length - 1)}
-                    disabled={items.length <= 1}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="Fewer bullets"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={6}
-                    value={items.length}
-                    onChange={(e) => setRepoCount(repo, displayName, Number(e.target.value) || 1)}
-                    className="w-12 rounded-md border border-gray-200 bg-white py-1 text-center text-sm font-semibold text-gray-900"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRepoCount(repo, displayName, items.length + 1)}
-                    disabled={items.length >= 6}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="More bullets"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </label>
-              </div>
+            <GitHubBox key={repo}>
+              <GitHubBoxHeader
+                title={displayName}
+                action={
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[var(--gh-fg-muted)]">Bullets</span>
+                    <GitHubButton variant="default" className="gh-btn-sm !px-2" disabled={items.length <= 1} onClick={() => setRepoCount(repo, displayName, items.length - 1)}>−</GitHubButton>
+                    <input
+                      type="number"
+                      min={1}
+                      max={6}
+                      value={items.length}
+                      onChange={(e) => setRepoCount(repo, displayName, Number(e.target.value) || 1)}
+                      className="gh-input w-12 !py-1 text-center text-sm"
+                    />
+                    <GitHubButton variant="default" className="gh-btn-sm !px-2" disabled={items.length >= 6} onClick={() => setRepoCount(repo, displayName, items.length + 1)}>+</GitHubButton>
+                  </div>
+                }
+              />
+              <p className="mb-3 text-xs text-[var(--gh-fg-muted)]">{repo}</p>
+              {meta?.description && <p className="mb-3 text-sm">{meta.description}</p>}
 
               {readme && (
-                <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))}
-                    className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-                  >
-                    README excerpt (from GitHub)
-                    {showReadme ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <div className="mb-4 rounded-md border border-[var(--gh-border-muted)] bg-[var(--gh-canvas-subtle)] p-3">
+                  <button type="button" onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-semibold text-[var(--gh-fg-muted)]">
+                    README excerpt
+                    <span>{showReadme ? '▲' : '▼'}</span>
                   </button>
-                  {showReadme && (
-                    <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap font-sans text-xs text-gray-600">
-                      {readme}
-                    </pre>
-                  )}
+                  {showReadme && <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs">{readme}</pre>}
                 </div>
               )}
 
-              <label className="mt-4 block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  What does this project do? (helps tailor your resume)
-                </span>
+              <label className="block">
+                <span className="gh-form-label !text-xs">What does this project do?</span>
                 <textarea
                   value={projectNotes[repo] ?? ''}
                   onChange={(e) => onProjectNotesChange(repo, e.target.value)}
                   rows={3}
-                  placeholder="e.g. Full-stack job tracker with GitHub OAuth, PostgreSQL, and AI resume tailoring…"
-                  className="mt-1 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#7C3AED]/50 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+                  placeholder="Brief description for the tailor step…"
+                  className="gh-textarea mt-1"
                 />
               </label>
 
               <ul className="mt-4 space-y-3">
                 {items.map((b, idx) => (
                   <li key={b.id} className="flex gap-3">
-                    <span className="mt-2.5 w-5 shrink-0 text-center text-xs font-medium text-gray-400">{idx + 1}</span>
-                    <input
-                      type="checkbox"
-                      checked={b.included}
-                      onChange={() => updateBullet(b.id, { included: !b.included })}
-                      className="mt-2.5 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-[#7C3AED]"
-                      title="Include in resume"
-                    />
+                    <span className="mt-2.5 w-5 shrink-0 text-center text-xs text-[var(--gh-fg-subtle)]">{idx + 1}</span>
+                    <input type="checkbox" checked={b.included} onChange={() => updateBullet(b.id, { included: !b.included })} className="gh-checkbox mt-2.5" />
                     <textarea
                       value={b.text}
                       onChange={(e) => updateBullet(b.id, { text: e.target.value })}
                       rows={2}
-                      placeholder="Edit bullet point…"
-                      className="min-h-[4rem] flex-1 resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#7C3AED]/50 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+                      placeholder="Bullet point…"
+                      className="gh-textarea min-h-[4rem] flex-1"
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeBullet(b.id)}
-                      disabled={items.length <= 1}
-                      className="mt-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
-                      aria-label="Delete bullet"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <GitHubButton variant="danger" className="gh-btn-sm !px-2" disabled={items.length <= 1} onClick={() => removeBullet(b.id)} aria-label="Delete">×</GitHubButton>
                   </li>
                 ))}
               </ul>
-            </section>
+            </GitHubBox>
           );
         })}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-gray-500">
-          {includedCount} bullet{includedCount === 1 ? '' : 's'} included · resume targets <strong>1 page</strong>
-        </p>
-        <button
-          type="button"
-          disabled={includedCount === 0}
-          onClick={() => onContinue(bullets, projectNotes)}
-          className="btn-accent"
-        >
-          Continue →
-        </button>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--gh-border-muted)] pt-4">
+        <p className="text-sm text-[var(--gh-fg-muted)]">{includedCount} bullets · 1 page target</p>
+        <GitHubButton variant="primary" disabled={includedCount === 0} onClick={() => onContinue(bullets, projectNotes)}>
+          Continue
+        </GitHubButton>
       </div>
     </div>
   );

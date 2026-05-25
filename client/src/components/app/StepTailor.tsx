@@ -1,4 +1,6 @@
-import { Loader2, Plus } from 'lucide-react';
+import GitHubBox, { GitHubLabel } from '../github/GitHubBox';
+import GitHubButton from '../github/GitHubButton';
+import Spinner from '../ui/Spinner';
 import { computeAtsMatch } from '../../utils/atsMatch';
 import type { BulletItem } from '../../hooks/useAppState';
 import type { ContactInfo } from '../../types/contact';
@@ -49,69 +51,41 @@ export default function StepTailor({
   const skills = extractSkills(jobDescription);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 lg:px-6">
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
-          <label className="text-sm font-semibold text-gray-900" htmlFor="jd">
-            Paste Job Description
-          </label>
+    <div className="gh-container-wide py-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <GitHubBox>
+          <label className="gh-form-label" htmlFor="jd">Job description</label>
           <textarea
             id="jd"
             value={jobDescription}
             onChange={(e) => onJobDescriptionChange(e.target.value)}
-            placeholder="Paste the full job description here. We'll rewrite bullets to match the role's language and maximize ATS keyword match."
-            className="mt-3 h-72 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm text-gray-700 focus:border-[#7C3AED] focus:outline-none focus:ring-1 focus:ring-[#7C3AED]"
+            placeholder="Paste the full job description…"
+            className="gh-textarea mt-2 h-72"
           />
           {skills.length > 0 && (
             <div className="mt-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Key Skills Detected</p>
-                <button type="button" className="cursor-pointer text-xs text-[#7C3AED] hover:underline">
-                  Edit Keywords
-                </button>
-              </div>
+              <p className="text-xs font-semibold text-[var(--gh-fg-muted)]">Detected skills</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {skills.map((s) => (
-                  <span key={s} className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-[#7C3AED]">
-                    {s}
-                  </span>
-                ))}
+                {skills.map((s) => <GitHubLabel key={s} variant="accent">{s}</GitHubLabel>)}
               </div>
             </div>
           )}
           {jobDescription.trim() && (
-            <p className="mt-3 text-xs text-gray-400">~{matchPercent}% keyword overlap with your bullets</p>
+            <p className="mt-3 text-xs text-[var(--gh-fg-muted)]">~{matchPercent}% keyword overlap with your bullets</p>
           )}
-        </div>
+        </GitHubBox>
 
         <div>
           {jobDescription.trim() && (
-            <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              Tailored for {jobTitle(jobDescription)}
-            </span>
+            <GitHubLabel variant="success">Tailored for {jobTitle(jobDescription)}</GitHubLabel>
           )}
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">Tailored Resume (Preview)</h3>
-          <div className="mt-4 max-h-[560px] overflow-y-auto rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="mt-4 text-base font-semibold">Preview</h3>
+          <div className="mt-3 max-h-[560px] overflow-y-auto rounded-md border border-[var(--gh-border-default)]">
             <ResumePreview contactInfo={contactInfo} bullets={bullets} />
           </div>
-          <button
-            type="button"
-            disabled={generating}
-            onClick={onGenerate}
-            className="btn-primary mt-6 w-full !rounded-lg"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                Tailor My Resume
-              </>
-            )}
-          </button>
+          <GitHubButton variant="primary" className="mt-4 w-full" disabled={generating} onClick={onGenerate}>
+            {generating ? <><Spinner /> Generating…</> : 'Generate tailored resume'}
+          </GitHubButton>
         </div>
       </div>
     </div>

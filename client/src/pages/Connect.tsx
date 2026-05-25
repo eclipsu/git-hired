@@ -1,28 +1,33 @@
-import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import GitHubHeader from '../components/github/GitHubHeader';
+import GitHubBox from '../components/github/GitHubBox';
+import GitHubMark from '../components/github/GitHubMark';
+import { ghBtnClass } from '../components/github/GitHubButton';
 
 export default function Connect() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 text-white">
-          <i className="fa-brands fa-github text-3xl" />
-        </div>
-        <h2 className="mt-6 text-2xl font-semibold text-gray-900">Connect your GitHub account</h2>
-        <p className="mt-3 text-sm leading-relaxed text-gray-500">
-          We'll analyze your repositories, commits, and pull requests to build your resume.
-        </p>
-        <a href="/auth/github" className="btn-primary mt-8 w-full">
-          <i className="fa-brands fa-github" />
-          Continue with GitHub
-        </a>
-        <p className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
-          <Lock className="h-3.5 w-3.5" />
-          We never post or make changes to your GitHub.
-        </p>
-        <Link to="/" className="mt-6 inline-block cursor-pointer text-sm text-gray-500 hover:text-gray-900">
-          ← Back to home
-        </Link>
+    <div className="gh-page gh-page-muted">
+      <GitHubHeader right={<Link to="/" className="gh-link text-sm text-white/80 hover:text-white">Home</Link>} />
+
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-12">
+        <GitHubBox className="w-full max-w-[340px] text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gh-header-bg)] text-white">
+            <GitHubMark size={28} />
+          </div>
+          <h1 className="mt-4 text-xl font-semibold">Sign in to GitHired</h1>
+          <p className="mt-2 text-sm text-[var(--gh-fg-muted)]">
+            We'll analyze your repositories to build your resume. Read-only access.
+          </p>
+          <a href="/auth/github" className={`${ghBtnClass('primary')} mt-6 w-full`}>
+            Continue with GitHub
+          </a>
+          <p className="mt-4 text-xs text-[var(--gh-fg-subtle)]">
+            We never post or modify your GitHub account.
+          </p>
+          <Link to="/" className="gh-link mt-6 inline-block text-sm">
+            ← Back to home
+          </Link>
+        </GitHubBox>
       </div>
     </div>
   );

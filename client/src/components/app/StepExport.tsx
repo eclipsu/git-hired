@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Copy, FileText, Link2, Loader2, RotateCcw } from 'lucide-react';
+import GitHubBox from '../github/GitHubBox';
+import { GitHubFlash, GitHubLabel } from '../github/GitHubBox';
+import GitHubButton from '../github/GitHubButton';
 import { copyToClipboard } from '../../utils/clipboard';
 import { useCopyFeedback } from '../../hooks/useCopyFeedback';
 import LatexEditor from './LatexEditor';
@@ -55,11 +57,6 @@ export default function StepExport({
 
   const plainTextResume = bullets.filter((b) => b.included).map((b) => `• ${b.text}`).join('\n');
 
-  const loadVersions = () => {
-    fetch('/api/versions', { credentials: 'include' }).catch(() => {});
-  };
-
-  useEffect(() => { loadVersions(); }, []);
   useEffect(() => { setEditorTex(tex); }, [tex]);
 
   const runCompile = useCallback(async (source: string) => {
@@ -82,11 +79,6 @@ export default function StepExport({
 
   useEffect(() => () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); }, [pdfUrl]);
 
-  const handleEditorChange = (value: string) => {
-    setEditorTex(value);
-    onTexChange(value);
-  };
-
   const saveVersion = async () => {
     setSaving(true);
     try {
@@ -97,9 +89,7 @@ export default function StepExport({
         body: JSON.stringify({ name: versionName, generatedTex: editorTex, jobDescription, contactInfo }),
       });
       if (!res.ok) throw new Error('Save failed');
-      const data = (await res.json()) as { id: string };
-      setCurrentVersionId(data.id);
-      loadVersions();
+      setCurrentVersionId(((await res.json()) as { id: string }).id);
     } catch (err) {
       setCompileError(err instanceof Error ? err.message : 'Save failed');
     } finally {
@@ -121,7 +111,6 @@ export default function StepExport({
       if (!res.ok) return;
       versionId = ((await res.json()) as { id: string }).id;
       setCurrentVersionId(versionId);
-      loadVersions();
     }
     setSharing(true);
     try {
@@ -135,100 +124,77 @@ export default function StepExport({
     }
   };
 
-  const downloadPdf = () => {
-    if (!pdfUrl) return;
-    const a = document.createElement('a');
-    a.href = pdfUrl;
-    a.download = 'resume.pdf';
-    a.click();
-  };
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
+    <div className="gh-container-wide py-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={onRetailer} className="cursor-pointer text-sm text-gray-500 hover:text-gray-900">
-          ← Re-tailor
-        </button>
-        <span className="rounded-full bg-purple-50 px-3 py-0.5 text-xs font-semibold text-[#7C3AED]">
-          ATS match {atsMatchPercent}%
-        </span>
-        <Link to="/dashboard" className="btn-secondary ml-auto !rounded-lg !text-xs">Dashboard</Link>
+        <button type="button" onClick={onRetailer} className="gh-link cursor-pointer text-sm">← Re-tailor</button>
+        <GitHubLabel variant="accent">ATS {atsMatchPercent}%</GitHubLabel>
+        <Link to="/dashboard" className="gh-btn gh-btn-default gh-btn-sm ml-auto">Dashboard</Link>
       </div>
 
-      <h2 className="text-xl font-semibold text-gray-900">LaTeX editor & PDF preview</h2>
-      <p className="mt-1 text-sm text-gray-500">Edit the source, compile, and download. Resume targets one page.</p>
+      <h2 className="text-base font-semibold">LaTeX editor & PDF</h2>
+      <p className="mt-1 text-sm text-[var(--gh-fg-muted)]">Edit source, compile, and download.</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" disabled={compiling} onClick={() => runCompile(editorTex)} className="btn-primary !rounded-lg !py-2 !text-sm">
-          {compiling ? <><Loader2 className="h-4 w-4 animate-spin" /> Compiling…</> : 'Compile PDF'}
-        </button>
-        <button type="button" onClick={() => { onResetTex(); setEditorTex(originalTex); }} className="btn-secondary !rounded-lg !py-2 !text-sm">
-          <RotateCcw className="h-4 w-4" />
-          Reset LaTeX
-        </button>
-        <button type="button" onClick={async () => { await copyToClipboard(editorTex); markCopied('latex'); }} className="btn-secondary !rounded-lg !py-2 !text-sm">
-          <Copy className="h-4 w-4" />
-          {copiedId === 'latex' ? 'Copied ✓' : 'Copy LaTeX'}
-        </button>
-        <button type="button" disabled={!pdfUrl} onClick={downloadPdf} className="btn-accent !rounded-lg !py-2 !text-sm">
-          <FileText className="h-4 w-4" />
+        <GitHubButton variant="primary" disabled={compiling} onClick={() => runCompile(editorTex)}>
+          {compiling ? <><Spinner /> Compiling…</> : 'Compile PDF'}
+        </GitHubButton>
+        <GitHubButton variant="default" onClick={() => { onResetTex(); setEditorTex(originalTex); }}>Reset</GitHubButton>
+        <GitHubButton variant="default" onClick={async () => { await copyToClipboard(editorTex); markCopied('latex'); }}>
+          {copiedId === 'latex' ? 'Copied' : 'Copy LaTeX'}
+        </GitHubButton>
+        <GitHubButton variant="primary" disabled={!pdfUrl} onClick={() => { if (pdfUrl) { const a = document.createElement('a'); a.href = pdfUrl; a.download = 'resume.pdf'; a.click(); } }}>
           Download PDF
-        </button>
+        </GitHubButton>
       </div>
 
       <div className="mt-4 grid min-h-[70vh] gap-4 lg:grid-cols-2">
-        <div className="flex min-h-[420px] flex-col rounded-xl border border-gray-200 bg-gray-900 p-2 shadow-sm lg:min-h-0">
-          <p className="px-2 py-1 text-xs font-medium text-gray-400">LaTeX source</p>
+        <div className="flex min-h-[420px] flex-col rounded-md border border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)] p-2 lg:min-h-0">
+          <p className="px-2 py-1 text-xs font-medium text-[var(--gh-fg-muted)]">LaTeX source</p>
           <div className="min-h-[380px] flex-1 lg:min-h-0">
-            <LatexEditor value={editorTex} onChange={handleEditorChange} />
+            <LatexEditor value={editorTex} onChange={(v) => { setEditorTex(v); onTexChange(v); }} />
           </div>
         </div>
-        <div className="relative flex min-h-[420px] flex-col rounded-xl border border-gray-200 bg-gray-900 p-4 shadow-sm">
-          <p className="mb-2 text-xs font-medium text-gray-400">PDF preview</p>
+        <div className="relative flex min-h-[420px] flex-col rounded-md border border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)] p-4">
+          <p className="mb-2 text-xs font-medium text-[var(--gh-fg-muted)]">PDF preview</p>
           {compiling && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-gray-900/80">
-              <Spinner className="h-10 w-10 !text-white" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-[var(--gh-canvas-subtle)]/90">
+              <Spinner className="h-8 w-8" />
             </div>
           )}
           {pdfUrl ? (
-            <iframe title="PDF preview" src={pdfUrl} className="min-h-[380px] flex-1 rounded-lg bg-white" />
+            <iframe title="PDF preview" src={pdfUrl} className="min-h-[380px] flex-1 rounded-md bg-white" />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-gray-500">Click Compile PDF</div>
+            <div className="flex flex-1 items-center justify-center text-sm text-[var(--gh-fg-muted)]">Compile to preview</div>
           )}
         </div>
       </div>
 
-      {compileError && (
-        <div className="mt-4 whitespace-pre-wrap rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {compileError}
-        </div>
-      )}
+      {compileError && <GitHubFlash variant="error">{compileError}</GitHubFlash>}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <Copy className="mx-auto h-8 w-8 text-gray-700" />
-          <p className="mt-3 text-sm font-semibold text-gray-900">Copy bullets</p>
-          <button type="button" onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }} className="btn-secondary mt-4 w-full !text-sm">
-            {copiedId === 'bullets' ? 'Copied ✓' : 'Copy'}
-          </button>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <Link2 className="mx-auto h-8 w-8 text-[#7C3AED]" />
-          <p className="mt-3 text-sm font-semibold text-gray-900">Share link</p>
-          <button type="button" disabled={sharing || saving} onClick={getShareLink} className="btn-secondary mt-4 w-full !text-sm">
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <GitHubBox className="text-center">
+          <p className="text-sm font-semibold">Copy bullets</p>
+          <GitHubButton variant="default" className="mt-3 w-full" onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }}>
+            {copiedId === 'bullets' ? 'Copied' : 'Copy'}
+          </GitHubButton>
+        </GitHubBox>
+        <GitHubBox className="text-center">
+          <p className="text-sm font-semibold">Share link</p>
+          <GitHubButton variant="default" className="mt-3 w-full" disabled={sharing || saving} onClick={getShareLink}>
             {sharing ? 'Creating…' : 'Get link'}
-          </button>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">Save version</p>
-          <input type="text" value={versionName} onChange={(e) => setVersionName(e.target.value)} className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
-          <button type="button" disabled={saving || !versionName.trim()} onClick={saveVersion} className="btn-accent mt-3 w-full !rounded-lg !py-2 !text-sm">
+          </GitHubButton>
+        </GitHubBox>
+        <GitHubBox>
+          <p className="text-sm font-semibold">Save version</p>
+          <input type="text" value={versionName} onChange={(e) => setVersionName(e.target.value)} className="gh-input mt-2" />
+          <GitHubButton variant="primary" className="mt-3 w-full" disabled={saving || !versionName.trim()} onClick={saveVersion}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+          </GitHubButton>
+        </GitHubBox>
       </div>
 
-      {shareUrl && <p className="mt-4 text-center font-mono text-xs text-gray-500">{copiedId === 'share' ? 'Link copied!' : shareUrl}</p>}
+      {shareUrl && <p className="mt-4 text-center font-mono text-xs text-[var(--gh-fg-muted)]">{copiedId === 'share' ? 'Link copied!' : shareUrl}</p>}
     </div>
   );
 }

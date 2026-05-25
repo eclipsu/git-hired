@@ -422,10 +422,8 @@ export default function AppPage() {
       <AppNav current={state.step} completed={completedSteps} />
 
       {error && (
-        <div className="mx-auto max-w-4xl px-4 pt-4">
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
+        <div className="mx-auto max-w-6xl px-4 pt-4">
+          <div className="gh-flash gh-flash-error">{error}</div>
         </div>
       )}
 
