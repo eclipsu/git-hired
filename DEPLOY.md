@@ -95,7 +95,12 @@ chmod +x scripts/ec2-deploy.sh
 sudo ./scripts/ec2-deploy.sh
 
 # Option B — direct (no --profile flag)
-sudo docker-compose -f docker-compose.prod.yml up -d --build
+git pull origin main
+grep fonts-extra Dockerfile && echo "ERROR: old Dockerfile — git pull failed" && exit 1 || true
+sudo docker system prune -af
+sudo docker builder prune -af
+sudo docker-compose -f docker-compose.prod.yml build --no-cache
+sudo docker-compose -f docker-compose.prod.yml up -d
 sudo docker-compose -f docker-compose.prod.yml logs -f app
 ```
 
@@ -113,7 +118,7 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | 401 on all API calls after login | Ensure `trust proxy` is set (production) and you use **HTTPS Vercel URL** |
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
 | Docker build stuck at `npm run build` | t3.micro OOM/slow — pull latest (prod Docker skips client/Vite build). Add swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` |
-| Docker build `No space left on device` on texlive | Do **not** install `texlive-fonts-extra` (huge). Icons use `fontawesome5` from `texlive-latex-extra` already in the Dockerfile. Free disk: `docker system prune -af`, then rebuild. Add swap if needed (see row above). |
+| Docker build `No space left on device` on texlive | **Pull latest first** — old Dockerfiles included `texlive-fonts-extra` (~500MB). Verify: `grep fonts-extra Dockerfile` must print nothing. Then: `sudo docker system prune -af && sudo docker builder prune -af`, check `df -h /`, add swap if under 2GB free, rebuild with `--no-cache`. |
 | PDF compile fails | Check `docker compose logs`; ensure `tex/` is in image (rebuild). Missing icons → rebuild image with latest Dockerfile (needs `texlive-latex-extra`, not fonts-extra). |
 | Vercel 404 on `/app` or `/connect` | Ensure `vercel.json` has SPA fallback rewrite to `/index.html` |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |

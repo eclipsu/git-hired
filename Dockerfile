@@ -7,12 +7,10 @@ RUN apt-get update \
     python3 \
     make \
     g++ \
-    texlive-latex-base \
-    texlive-latex-recommended \
     texlive-latex-extra \
     texlive-fonts-recommended \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
-# fontawesome5 (\faGithub, \faLinkedin, etc.) ships in texlive-latex-extra — NOT texlive-fonts-extra (~500MB, breaks small EC2 builds)
+# fontawesome5 (\faGithub, etc.) is in texlive-latex-extra. Do NOT add texlive-fonts-extra (~500MB).
 
 WORKDIR /app
 
