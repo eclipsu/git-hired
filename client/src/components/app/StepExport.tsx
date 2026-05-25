@@ -1,29 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Copy, FileText, Link2, MoreVertical } from 'lucide-react';
+import { Copy, FileText, Link2, Loader2, RotateCcw } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard';
 import { useCopyFeedback } from '../../hooks/useCopyFeedback';
-import ResumePreview from '../resume/ResumePreview';
+import LatexEditor from './LatexEditor';
 import Spinner from '../ui/Spinner';
 import type { BulletItem } from '../../hooks/useAppState';
 import type { ContactInfo } from '../../types/contact';
-import type { TailoredResume } from '../../types/resume';
 
 interface StepExportProps {
   tex: string;
+  originalTex: string;
   atsMatchPercent: number;
   bullets: BulletItem[];
-  tailoredResume: TailoredResume | null;
   jobDescription: string;
   contactInfo: ContactInfo;
   onRetailer: () => void;
   onCompile: (tex: string) => Promise<Blob>;
-}
-
-interface SavedVersion {
-  id: string;
-  name: string;
-  createdAt: string;
+  onTexChange: (tex: string) => void;
+  onResetTex: () => void;
 }
 
 function defaultVersionName(jobDescription: string): string {
@@ -37,44 +32,41 @@ function defaultVersionName(jobDescription: string): string {
 
 export default function StepExport({
   tex,
+  originalTex,
   atsMatchPercent,
   bullets,
-  tailoredResume,
   jobDescription,
   contactInfo,
   onRetailer,
   onCompile,
+  onTexChange,
+  onResetTex,
 }: StepExportProps) {
   const { copiedId, markCopied } = useCopyFeedback();
+  const [editorTex, setEditorTex] = useState(tex);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
   const [versionName, setVersionName] = useState(() => defaultVersionName(jobDescription));
   const [saving, setSaving] = useState(false);
-  const [savedVersions, setSavedVersions] = useState<SavedVersion[]>([]);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
 
-  const plainTextResume = useMemo(
-    () => bullets.filter((b) => b.included).map((b) => `• ${b.text}`).join('\n'),
-    [bullets],
-  );
+  const plainTextResume = bullets.filter((b) => b.included).map((b) => `• ${b.text}`).join('\n');
 
   const loadVersions = () => {
-    fetch('/api/versions', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((data) => setSavedVersions(data as SavedVersion[]))
-      .catch(() => {});
+    fetch('/api/versions', { credentials: 'include' }).catch(() => {});
   };
 
   useEffect(() => { loadVersions(); }, []);
+  useEffect(() => { setEditorTex(tex); }, [tex]);
 
-  const handleCompile = async () => {
+  const runCompile = useCallback(async (source: string) => {
     setCompiling(true);
     setCompileError(null);
     try {
-      const blob = await onCompile(tex);
+      const blob = await onCompile(source);
       const url = URL.createObjectURL(blob);
       setPdfUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url; });
     } catch (err) {
@@ -82,10 +74,18 @@ export default function StepExport({
     } finally {
       setCompiling(false);
     }
-  };
+  }, [onCompile]);
 
-  useEffect(() => { if (tex) handleCompile(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    if (tex) runCompile(tex);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); }, [pdfUrl]);
+
+  const handleEditorChange = (value: string) => {
+    setEditorTex(value);
+    onTexChange(value);
+  };
 
   const saveVersion = async () => {
     setSaving(true);
@@ -94,7 +94,7 @@ export default function StepExport({
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: versionName, generatedTex: tex, jobDescription, contactInfo }),
+        body: JSON.stringify({ name: versionName, generatedTex: editorTex, jobDescription, contactInfo }),
       });
       if (!res.ok) throw new Error('Save failed');
       const data = (await res.json()) as { id: string };
@@ -115,7 +115,7 @@ export default function StepExport({
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: versionName, generatedTex: tex, jobDescription, contactInfo }),
+        body: JSON.stringify({ name: versionName, generatedTex: editorTex, jobDescription, contactInfo }),
       });
       setSaving(false);
       if (!res.ok) return;
@@ -144,8 +144,8 @@ export default function StepExport({
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 lg:px-6">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+    <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={onRetailer} className="cursor-pointer text-sm text-gray-500 hover:text-gray-900">
           ← Re-tailor
         </button>
@@ -155,102 +155,80 @@ export default function StepExport({
         <Link to="/dashboard" className="btn-secondary ml-auto !rounded-lg !text-xs">Dashboard</Link>
       </div>
 
-      <h2 className="text-center text-2xl font-semibold text-gray-900">Your resume is ready! 🎉</h2>
+      <h2 className="text-xl font-semibold text-gray-900">LaTeX editor & PDF preview</h2>
+      <p className="mt-1 text-sm text-gray-500">Edit the source, compile, and download. Resume targets one page.</p>
 
-      <div className="relative mt-8 rounded-2xl bg-gray-900 p-6 lg:p-10">
-        {compiling && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-gray-900/80">
-            <Spinner className="h-10 w-10 !text-white" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" disabled={compiling} onClick={() => runCompile(editorTex)} className="btn-primary !rounded-lg !py-2 !text-sm">
+          {compiling ? <><Loader2 className="h-4 w-4 animate-spin" /> Compiling…</> : 'Compile PDF'}
+        </button>
+        <button type="button" onClick={() => { onResetTex(); setEditorTex(originalTex); }} className="btn-secondary !rounded-lg !py-2 !text-sm">
+          <RotateCcw className="h-4 w-4" />
+          Reset LaTeX
+        </button>
+        <button type="button" onClick={async () => { await copyToClipboard(editorTex); markCopied('latex'); }} className="btn-secondary !rounded-lg !py-2 !text-sm">
+          <Copy className="h-4 w-4" />
+          {copiedId === 'latex' ? 'Copied ✓' : 'Copy LaTeX'}
+        </button>
+        <button type="button" disabled={!pdfUrl} onClick={downloadPdf} className="btn-accent !rounded-lg !py-2 !text-sm">
+          <FileText className="h-4 w-4" />
+          Download PDF
+        </button>
+      </div>
+
+      <div className="mt-4 grid min-h-[70vh] gap-4 lg:grid-cols-2">
+        <div className="flex min-h-[420px] flex-col rounded-xl border border-gray-200 bg-gray-900 p-2 shadow-sm lg:min-h-0">
+          <p className="px-2 py-1 text-xs font-medium text-gray-400">LaTeX source</p>
+          <div className="min-h-[380px] flex-1 lg:min-h-0">
+            <LatexEditor value={editorTex} onChange={handleEditorChange} />
           </div>
-        )}
-        <div className="mx-auto max-w-3xl">
+        </div>
+        <div className="relative flex min-h-[420px] flex-col rounded-xl border border-gray-200 bg-gray-900 p-4 shadow-sm">
+          <p className="mb-2 text-xs font-medium text-gray-400">PDF preview</p>
+          {compiling && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-gray-900/80">
+              <Spinner className="h-10 w-10 !text-white" />
+            </div>
+          )}
           {pdfUrl ? (
-            <iframe title="PDF" src={pdfUrl} className="h-[520px] w-full rounded-xl bg-white shadow-2xl" />
+            <iframe title="PDF preview" src={pdfUrl} className="min-h-[380px] flex-1 rounded-lg bg-white" />
           ) : (
-            <ResumePreview
-              contactInfo={contactInfo}
-              bullets={bullets}
-              tailoredResume={tailoredResume}
-              className="shadow-2xl"
-            />
+            <div className="flex flex-1 items-center justify-center text-sm text-gray-500">Click Compile PDF</div>
           )}
         </div>
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <FileText className="mx-auto h-8 w-8 text-red-500" />
-          <p className="mt-3 text-sm font-semibold text-gray-900">Download PDF</p>
-          <p className="text-xs text-gray-500">ATS-Optimized PDF</p>
-          <button type="button" disabled={!pdfUrl} onClick={downloadPdf} className="btn-primary mt-4 w-full !rounded-lg !py-2 !text-sm">
-            Download
-          </button>
+      {compileError && (
+        <div className="mt-4 whitespace-pre-wrap rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {compileError}
         </div>
+      )}
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
           <Copy className="mx-auto h-8 w-8 text-gray-700" />
-          <p className="mt-3 text-sm font-semibold text-gray-900">Copy to Clipboard</p>
-          <p className="text-xs text-gray-500">Plain text format</p>
-          <button
-            type="button"
-            onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }}
-            className="btn-secondary mt-4 w-full !text-sm"
-          >
+          <p className="mt-3 text-sm font-semibold text-gray-900">Copy bullets</p>
+          <button type="button" onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }} className="btn-secondary mt-4 w-full !text-sm">
             {copiedId === 'bullets' ? 'Copied ✓' : 'Copy'}
           </button>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-5 text-center shadow-sm">
           <Link2 className="mx-auto h-8 w-8 text-[#7C3AED]" />
-          <p className="mt-3 text-sm font-semibold text-gray-900">Share Link</p>
-          <p className="text-xs text-gray-500">Share with anyone</p>
+          <p className="mt-3 text-sm font-semibold text-gray-900">Share link</p>
           <button type="button" disabled={sharing || saving} onClick={getShareLink} className="btn-secondary mt-4 w-full !text-sm">
-            {sharing ? 'Creating…' : 'Get Link'}
+            {sharing ? 'Creating…' : 'Get link'}
+          </button>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-semibold text-gray-900">Save version</p>
+          <input type="text" value={versionName} onChange={(e) => setVersionName(e.target.value)} className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+          <button type="button" disabled={saving || !versionName.trim()} onClick={saveVersion} className="btn-accent mt-3 w-full !rounded-lg !py-2 !text-sm">
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
 
-      {shareUrl && (
-        <p className="mt-4 text-center font-mono text-xs text-gray-500">
-          {copiedId === 'share' ? 'Link copied to clipboard!' : shareUrl}
-        </p>
-      )}
-
-      <div className="mt-10 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-500">Save this tailored resume for future use.</p>
-        <div className="mt-3 flex gap-2">
-          <input
-            type="text"
-            value={versionName}
-            onChange={(e) => setVersionName(e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
-          <button type="button" disabled={saving || !versionName.trim()} onClick={saveVersion} className="btn-accent !rounded-lg !px-5 !py-2 !text-sm">
-            {saving ? 'Saving…' : 'Save Version'}
-          </button>
-        </div>
-        <h3 className="mt-6 text-sm font-semibold text-gray-900">Your Saved Versions</h3>
-        <ul className="mt-3 space-y-2">
-          {savedVersions.slice(0, 5).map((v) => (
-            <li key={v.id} className="flex items-center justify-between rounded-lg border border-gray-100 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{v.name}</p>
-                <p className="text-xs text-gray-400">
-                  {new Date(v.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link to={`/dashboard/versions/${v.id}`} className="cursor-pointer text-xs font-medium text-[#7C3AED] hover:underline">View</Link>
-                <button type="button" className="cursor-pointer text-gray-400 hover:text-gray-600"><MoreVertical className="h-4 w-4" /></button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {compileError && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {compileError}
-        </div>
-      )}
+      {shareUrl && <p className="mt-4 text-center font-mono text-xs text-gray-500">{copiedId === 'share' ? 'Link copied!' : shareUrl}</p>}
     </div>
   );
 }

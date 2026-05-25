@@ -27,12 +27,25 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
       selectedRepos,
     );
 
+    const projectMeta: Record<string, { displayName: string; readmeExcerpt: string; description: string | null }> = {};
+    for (const name of selectedRepos) {
+      const cached = session.cachedRepos?.find((r) => r.name === name);
+      const analysis = session.repoAnalysisCache?.[name];
+      projectMeta[name] = {
+        displayName: displayNames[name] ?? name,
+        readmeExcerpt: analysis?.readmeExcerpt ?? '',
+        description: cached?.description ?? null,
+      };
+    }
+
     res.json({
       cachedRepos: session.cachedRepos ?? [],
       reposCachedAt: session.reposCachedAt,
       selectedRepos,
       bullets,
       displayNames,
+      projectMeta,
+      projectNotes: session.projectNotes ?? {},
       selectedBullets: session.selectedBullets ?? null,
       uploadedResumeText: session.uploadedResumeText ?? null,
       uploadedResumeFilename: session.uploadedResumeFilename ?? null,
@@ -92,8 +105,9 @@ router.put('/notes', requireAuth, async (req: Request, res: Response, next: Next
 router.put('/bullets', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user as User;
-    const { bullets } = req.body as {
+    const { bullets, projectNotes } = req.body as {
       bullets?: { text: string; repo: string; displayName: string; included: boolean }[];
+      projectNotes?: Record<string, string>;
     };
 
     if (!Array.isArray(bullets)) {
@@ -111,17 +125,24 @@ router.put('/bullets', requireAuth, async (req: Request, res: Response, next: Ne
     }
     session.rawBullets = rawBullets;
 
+    if (projectNotes && typeof projectNotes === 'object') {
+      session.projectNotes = projectNotes;
+    }
+
     if (session.repoAnalysisCache) {
       for (const b of bullets) {
         const entry = session.repoAnalysisCache[b.repo];
         if (!entry) continue;
         entry.bullets = rawBullets[b.repo] ?? [];
         entry.displayName = b.displayName;
+        if (session.projectNotes?.[b.repo]) {
+          entry.projectNotes = session.projectNotes[b.repo];
+        }
       }
     }
 
     await AppDataSource.getRepository(ResumeSession).save(session);
-    res.json({ bullets: session.selectedBullets });
+    res.json({ bullets: session.selectedBullets, projectNotes: session.projectNotes ?? {} });
   } catch (err) {
     next(err);
   }

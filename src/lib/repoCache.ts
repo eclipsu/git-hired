@@ -14,6 +14,8 @@ export interface RepoAnalysisEntry {
   bullets: string[];
   skills?: Record<string, string[]>;
   displayName: string;
+  readmeExcerpt?: string;
+  projectNotes?: string;
   createdAt?: string;
   pushedAt?: string;
   repoUpdatedAt: string;

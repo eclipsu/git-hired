@@ -14,6 +14,23 @@ import {
   repoFingerprint,
 } from '../lib/repoCache';
 
+function buildProjectMeta(
+  session: ResumeSession,
+  repoNames: string[],
+): Record<string, { displayName: string; readmeExcerpt: string; description: string | null }> {
+  const result: Record<string, { displayName: string; readmeExcerpt: string; description: string | null }> = {};
+  for (const name of repoNames) {
+    const cached = session.cachedRepos?.find((r) => r.name === name);
+    const analysis = session.repoAnalysisCache?.[name];
+    result[name] = {
+      displayName: analysis?.displayName ?? name,
+      readmeExcerpt: analysis?.readmeExcerpt ?? '',
+      description: cached?.description ?? null,
+    };
+  }
+  return result;
+}
+
 const router = Router();
 
 interface RepoInput {
@@ -179,6 +196,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
         bullets,
         skills,
         displayName: resolvedDisplayName,
+        readmeExcerpt: repoData.readme.slice(0, 1500),
         createdAt: cachedRepo?.createdAt ?? repoData.createdAt,
         pushedAt: cachedRepo?.pushedAt ?? repoData.pushedAt,
         repoUpdatedAt,
@@ -202,6 +220,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     res.json({
       bullets: rawBullets,
       displayNames,
+      projectMeta: buildProjectMeta(session, repos.map((r) => r.name)),
       cachedRepos,
       analyzedRepos,
     });

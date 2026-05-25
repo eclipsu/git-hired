@@ -32,11 +32,19 @@ export interface ParsedResume {
   text: string;
 }
 
+export interface ProjectMeta {
+  displayName: string;
+  readmeExcerpt: string;
+  description: string | null;
+}
+
 export interface AppState {
   step: AppStep;
   user: UserProfile | null;
   repos: RepoItem[];
   bullets: BulletItem[];
+  projectMeta: Record<string, ProjectMeta>;
+  projectNotes: Record<string, string>;
   parsedResume: ParsedResume | null;
   notes: string;
   jobDescription: string;
@@ -69,6 +77,8 @@ const initialState: AppState = {
   user: null,
   repos: [],
   bullets: [],
+  projectMeta: {},
+  projectNotes: {},
   parsedResume: null,
   notes: '',
   jobDescription: '',

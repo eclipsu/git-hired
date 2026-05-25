@@ -22,6 +22,7 @@ interface StepEnrichProps {
   onContactFieldChange: (field: keyof ContactInfo, value: string) => void;
   onChatSend: (text: string) => void;
   onContinue: () => void;
+  onSkip: () => void;
 }
 
 export default function StepEnrich({
@@ -39,6 +40,7 @@ export default function StepEnrich({
   onContactFieldChange,
   onChatSend,
   onContinue,
+  onSkip,
 }: StepEnrichProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const canContinue = Boolean(parsedResume) && contactComplete;
@@ -100,16 +102,25 @@ export default function StepEnrich({
           <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
             <ResumePreview contactInfo={contactInfo} bullets={bullets} />
           </div>
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             {parsedResume && !contactComplete && (
               <p className="text-sm text-gray-500">
                 Missing: {missingContactFields(contactInfo).map((f) => CONTACT_FIELD_LABELS[f]).join(', ')}
               </p>
             )}
-            {!parsedResume && <p className="text-sm text-gray-500">Upload your resume to continue.</p>}
-            <button type="button" disabled={!canContinue} onClick={onContinue} className="btn-accent ml-auto">
-              Review bullets →
-            </button>
+            {!parsedResume && (
+              <p className="text-sm text-gray-500">Upload a resume to extract contact info, or skip below.</p>
+            )}
+            <div className="ml-auto flex flex-wrap gap-2">
+              {!parsedResume && (
+                <button type="button" onClick={onSkip} className="btn-secondary">
+                  Skip upload → Tailor
+                </button>
+              )}
+              <button type="button" disabled={!canContinue} onClick={onContinue} className="btn-accent">
+                Continue to tailor →
+              </button>
+            </div>
           </div>
         </div>
       </div>

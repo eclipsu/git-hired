@@ -125,16 +125,16 @@ function projectsSection(entries: ProjectEntry[]): string {
   if (entries.length === 0) {
     return `%-----------PROJECTS-----------
 \\section{Projects}
-    \\vspace{-5pt}
+    \\vspace{-8pt}
     \\resumeSubHeadingListStart
     \\resumeSubHeadingListEnd
-\\vspace{-15pt}
+\\vspace{-18pt}
 `;
   }
 
   const blocks = entries
     .map((entry, i) => {
-      const spacing = i < entries.length - 1 ? '\n          \\vspace{-13pt}' : '';
+      const spacing = i < entries.length - 1 ? '\n          \\vspace{-15pt}' : '';
       return `      \\resumeProjectHeading
           {\\textbf{${escapeLatex(entry.name)}} $|$ \\emph{${escapeLatex(entry.techStack)}}}{${escapeLatex(entry.dates)}}
 ${bulletList(entry.bullets)}${spacing}`;
@@ -149,7 +149,7 @@ ${bulletList(entry.bullets)}${spacing}`;
 ${blocks}
 
     \\resumeSubHeadingListEnd
-\\vspace{-15pt}
+\\vspace{-18pt}
 `;
 }
 
@@ -239,10 +239,10 @@ function headingSection(contact: ContactInfo): string {
 \\begin{center}
     {\\Huge \\scshape ${escapeLatex(contact.fullName)}} \\\\ \\vspace{1pt}
     ${addressLine}
-    \\small \\Telefon\\ ${escapeLatex(contact.phone)} ~
-    \\href{mailto:${escapeLatex(contact.email)}}{\\Letter\\ \\underline{${escapeLatex(contact.email)}}} ~
-    \\href{${escapeLatex(linkedin.url)}}{LinkedIn: \\underline{${escapeLatex(linkedin.label)}}}  ~
-    \\href{${escapeLatex(github.url)}}{GitHub: \\underline{${escapeLatex(github.label)}}}
+    \\small \\raisebox{-0.1\\height}\\faPhone\\ ${escapeLatex(contact.phone)} ~
+    \\href{mailto:${escapeLatex(contact.email)}}{\\raisebox{-0.2\\height}\\faEnvelope\\ \\underline{${escapeLatex(contact.email)}}} ~
+    \\href{${escapeLatex(linkedin.url)}}{\\raisebox{-0.2\\height}\\faLinkedin\\ \\underline{${escapeLatex(linkedin.label)}}}  ~
+    \\href{${escapeLatex(github.url)}}{\\raisebox{-0.2\\height}\\faGithub\\ \\underline{${escapeLatex(github.label)}}}
     \\vspace{-8pt}
 \\end{center}
 

@@ -58,6 +58,9 @@ export class ResumeSession {
   };
 
   @Column('simple-json', { nullable: true })
+  projectNotes!: Record<string, string>;
+
+  @Column('simple-json', { nullable: true })
   tailoredResume!: object;
 
   @Column('text', { nullable: true })

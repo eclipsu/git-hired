@@ -14,6 +14,7 @@ import {
   type AppStep,
   type BulletItem,
   type RepoItem,
+  type ProjectMeta,
 } from '../hooks/useAppState';
 import { useContactChat } from '../hooks/useContactChat';
 import { computeAtsMatch, tailoredResumeToText } from '../utils/atsMatch';
@@ -47,6 +48,8 @@ interface SessionPayload {
   selectedRepos: string[];
   bullets: Record<string, string[]>;
   displayNames: Record<string, string>;
+  projectMeta?: Record<string, ProjectMeta>;
+  projectNotes?: Record<string, string>;
   selectedBullets?: BulletItem[] | null;
   uploadedResumeText: string | null;
   uploadedResumeFilename: string | null;
@@ -155,6 +158,14 @@ export default function AppPage() {
 
         if (session.tailoredResume) {
           patch({ tailoredResume: session.tailoredResume });
+        }
+
+        if (session.projectNotes) {
+          patch({ projectNotes: session.projectNotes });
+        }
+
+        if (session.projectMeta) {
+          patch({ projectMeta: session.projectMeta });
         }
 
         if (session.jobDescription) {
@@ -275,9 +286,10 @@ export default function AppPage() {
         throw new Error(body.error ?? 'Analysis failed');
       }
 
-      const { bullets, displayNames, cachedRepos, analyzedRepos } = (await res.json()) as {
+      const { bullets, displayNames, projectMeta, cachedRepos, analyzedRepos } = (await res.json()) as {
         bullets: Record<string, string[]>;
         displayNames: Record<string, string>;
+        projectMeta?: Record<string, ProjectMeta>;
         cachedRepos?: string[];
         analyzedRepos?: string[];
       };
@@ -291,8 +303,8 @@ export default function AppPage() {
       }
 
       const items = bulletsFromResponse(bullets, displayNames);
-      patch({ bullets: items });
-      setStep('enrich');
+      patch({ bullets: items, projectMeta: projectMeta ?? {} });
+      setStep('bullets');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -331,13 +343,14 @@ export default function AppPage() {
     }
   };
 
-  const saveBullets = async (bullets: BulletItem[]) => {
+  const saveBullets = async (bullets: BulletItem[], projectNotes: Record<string, string>) => {
     await fetch('/api/session/bullets', {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bullets }),
+      body: JSON.stringify({ bullets, projectNotes }),
     });
+    patch({ projectNotes });
   };
 
   const handleTailor = async () => {
@@ -355,6 +368,7 @@ export default function AppPage() {
           parsedResumeText: state.parsedResume?.text,
           jobDescription: state.jobDescription,
           contactInfo,
+          projectNotes: state.projectNotes,
         }),
       });
 
@@ -431,6 +445,23 @@ export default function AppPage() {
           />
         ) : null}
 
+        {state.step === 'bullets' && (
+          <StepBullets
+            bullets={state.bullets}
+            projectMeta={state.projectMeta}
+            projectNotes={state.projectNotes}
+            onProjectNotesChange={(repo, notes) =>
+              patch({ projectNotes: { ...state.projectNotes, [repo]: notes } })
+            }
+            onChange={(bullets) => patch({ bullets })}
+            onContinue={async (bullets, projectNotes) => {
+              patch({ bullets, projectNotes });
+              await saveBullets(bullets, projectNotes);
+              setStep('enrich');
+            }}
+          />
+        )}
+
         {state.step === 'enrich' && (
           <StepEnrich
             bullets={state.bullets}
@@ -446,19 +477,8 @@ export default function AppPage() {
             onFileSelect={handleParseResume}
             onContactFieldChange={onContactFieldChange}
             onChatSend={onChatSend}
-            onContinue={() => setStep('bullets')}
-          />
-        )}
-
-        {state.step === 'bullets' && (
-          <StepBullets
-            bullets={state.bullets}
-            onChange={(bullets) => patch({ bullets })}
-            onContinue={async (bullets) => {
-              patch({ bullets });
-              await saveBullets(bullets);
-              setStep('tailor');
-            }}
+            onContinue={() => setStep('tailor')}
+            onSkip={() => setStep('tailor')}
           />
         )}
 
@@ -476,13 +496,15 @@ export default function AppPage() {
         {state.step === 'export' && (
           <StepExport
             tex={state.generatedTex}
+            originalTex={state.originalTex}
             atsMatchPercent={state.atsMatchPercent}
             bullets={state.bullets}
-            tailoredResume={state.tailoredResume}
             jobDescription={state.jobDescription}
             contactInfo={contactInfo}
             onRetailer={() => setStep('tailor')}
             onCompile={handleCompile}
+            onTexChange={(generatedTex) => patch({ generatedTex })}
+            onResetTex={() => patch({ generatedTex: state.originalTex })}
           />
         )}
       </div>

@@ -22,6 +22,7 @@ export function buildTailorPrompt(input: {
   jobDescription?: string;
   repoDates?: { displayName: string; dates: string }[];
   repoSkills?: Record<string, string[]>;
+  projectContext?: { displayName: string; readmeExcerpt?: string; userNotes?: string; description?: string | null }[];
 }): string {
   const bulletList = input.bullets
     .map((b) => `- [${b.displayName}] ${b.text}`)
@@ -35,6 +36,16 @@ export function buildTailorPrompt(input: {
     ? Object.entries(input.repoSkills)
         .map(([cat, items]) => `- ${cat}: ${items.join(', ')}`)
         .join('\n')
+    : 'None';
+
+  const projectContextList = input.projectContext?.length
+    ? input.projectContext.map((p) => {
+        const parts = [`- ${p.displayName}:`];
+        if (p.description) parts.push(`  GitHub description: ${p.description}`);
+        if (p.readmeExcerpt) parts.push(`  README excerpt: ${p.readmeExcerpt.slice(0, 600)}`);
+        if (p.userNotes) parts.push(`  Developer notes: ${p.userNotes}`);
+        return parts.join('\n');
+      }).join('\n\n')
     : 'None';
 
   const hasJobDescription = Boolean(input.jobDescription?.trim());
@@ -71,11 +82,13 @@ Do the following:
 5. Produce Technical Skills grouped by category — include ALL inferred technologies from repo analysis and the uploaded resume, not just primary ones. Merge repo-inferred skills (below) into the skills object.
 6. Extract soft skills (communication, leadership, teamwork, problem-solving, etc.) from user notes and the uploaded resume into soft_skills. Omit the array if none are found.
 
-LENGTH & DENSITY:
-- Aim for 3–4 bullets per experience entry. Each bullet should be 1–2 full sentences.
-- Each project entry needs 2–5 strong bullet points where data allows.
-- Expand the skills section comprehensively — include secondary tools, patterns, and concepts evidenced in the data.
-- The final resume should target 800–1000 words total across all sections.
+LENGTH & DENSITY — ONE PAGE MAX:
+- The resume MUST fit on ONE page (US letter, 11pt Jake template). This is non-negotiable.
+- Max 2–3 bullets per project; max 2–3 bullets per experience entry.
+- Max 3–4 projects total; omit or merge lower-priority entries if needed.
+- Keep skills to 3–5 compact categories; combine related items with commas.
+- Omit leadership section if space is tight.
+- Use tight, punchy bullets — one sentence each where possible.
 
 ${BULLET_RULES}
 ${jdInstructions}
@@ -143,6 +156,9 @@ ${repoDateList}
 
 Inferred skills from repo analysis (merge into skills section):
 ${repoSkillsList}
+
+Project context (README + developer notes — use to write accurate project bullets and techStack):
+${projectContextList}
 
 Uploaded resume text:
 ${input.parsedResumeText || 'None'}

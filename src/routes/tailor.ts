@@ -26,12 +26,14 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       parsedResumeText,
       jobDescription,
       contactInfo,
+      projectNotes,
     } = req.body as {
       bullets?: { text: string; repo: string; displayName: string; included: boolean }[];
       notes?: string;
       parsedResumeText?: string;
       jobDescription?: string;
       contactInfo?: ContactInfo;
+      projectNotes?: Record<string, string>;
     };
 
     if (!Array.isArray(bullets) || bullets.length === 0) {
@@ -72,6 +74,19 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     const selectedRepoNames = [...new Set(includedBullets.map((b) => b.repo))];
     const repoSkills = aggregateRepoSkills(session.repoAnalysisCache, selectedRepoNames);
 
+    const notesByRepo = projectNotes ?? session.projectNotes ?? {};
+    const projectContext = selectedRepoNames.map((repo) => {
+      const analysis = session.repoAnalysisCache?.[repo];
+      const cached = session.cachedRepos?.find((r) => r.name === repo);
+      const bullet = includedBullets.find((b) => b.repo === repo);
+      return {
+        displayName: bullet?.displayName ?? analysis?.displayName ?? repo,
+        readmeExcerpt: analysis?.readmeExcerpt,
+        userNotes: notesByRepo[repo] ?? analysis?.projectNotes,
+        description: cached?.description,
+      };
+    });
+
     const prompt = buildTailorPrompt({
       bullets: includedBullets,
       parsedResumeText: resumeText,
@@ -79,6 +94,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       jobDescription,
       repoDates,
       repoSkills,
+      projectContext,
     });
 
     const text = await ask(prompt);
@@ -101,6 +117,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
 
     session.selectedBullets = bullets;
     session.userNotes = notes ?? '';
+    session.projectNotes = notesByRepo;
     if (resumeText) session.uploadedResumeText = resumeText;
     session.jobDescription = jobDescription ?? '';
     session.contactInfo = contactInfo;
