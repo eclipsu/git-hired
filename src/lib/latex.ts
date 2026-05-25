@@ -58,7 +58,9 @@ export interface LeadershipEntry {
 }
 
 export interface TailoredResume {
+  summary: string;
   skills: Record<string, string[]>;
+  softSkills?: string[];
   experience: ResumeEntry[];
   projects: ProjectEntry[];
   education: EducationEntry[];
@@ -172,20 +174,48 @@ ${blocks}
 `;
 }
 
-function skillsSection(skills: Record<string, string[]>): string {
+function summarySection(summary: string): string {
+  const text = summary.trim();
+  if (!text) return '';
+
+  return `%-----------PROFESSIONAL SUMMARY-----------
+\\section{Professional Summary}
+ \\begin{itemize}[leftmargin=0.15in, label={}]
+    \\small{\\item{${escapeLatex(text)}}}
+ \\end{itemize}
+ \\vspace{-12pt}
+`;
+}
+
+function skillsSection(skills: Record<string, string[]>, softSkills?: string[]): string {
   const lines = Object.entries(skills ?? {})
     .filter(([, items]) => items.length > 0)
     .map(
       ([category, items]) =>
         `     \\textbf{${escapeLatex(category)}}{: ${escapeLatex(items.join(', '))}} \\\\`,
-    )
-    .join('\n');
+    );
+
+  if (softSkills && softSkills.length > 0) {
+    lines.push(
+      `     \\textbf{Soft Skills}{: ${escapeLatex(softSkills.join(', '))}} \\\\`,
+    );
+  }
+
+  if (lines.length === 0) {
+    return `%-----------TECHNICAL SKILLS-----------
+\\section{Technical Skills}
+ \\begin{itemize}[leftmargin=0.15in, label={}]
+    \\small{\\item{}}
+ \\end{itemize}
+ \\vspace{-16pt}
+`;
+  }
 
   return `%-----------TECHNICAL SKILLS-----------
 \\section{Technical Skills}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
-${lines}
+${lines.join('\n')}
     }}
  \\end{itemize}
  \\vspace{-16pt}
@@ -249,10 +279,11 @@ export function generateLatex(resume: TailoredResume, contact: ContactInfo): str
   const preamble = loadPreamble();
   const body = [
     headingSection(contact),
+    summarySection(resume.summary ?? ''),
     educationSection(resume.education ?? []),
     experienceSection(resume.experience ?? []),
     projectsSection(resume.projects ?? []),
-    skillsSection(resume.skills ?? {}),
+    skillsSection(resume.skills ?? {}, resume.softSkills),
     leadershipSection(resume.leadership),
     '\\end{document}',
   ].join('\n');

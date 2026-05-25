@@ -71,19 +71,23 @@ function inferSkills(bullets: BulletItem[]): Record<string, string[]> {
 function resolveResumeData(bullets: BulletItem[], tailoredResume?: TailoredResume | null) {
   if (tailoredResume) {
     return {
+      summary: tailoredResume.summary ?? '',
       education: tailoredResume.education ?? [],
       experience: tailoredResume.experience ?? [],
       projects: tailoredResume.projects ?? [],
       skills: tailoredResume.skills ?? {},
+      softSkills: tailoredResume.softSkills ?? [],
       leadership: tailoredResume.leadership ?? [],
     };
   }
 
   return {
+    summary: '',
     education: [] as EducationEntry[],
     experience: [] as ResumeEntry[],
     projects: bulletsToProjects(bullets),
     skills: inferSkills(bullets),
+    softSkills: [] as string[],
     leadership: [] as LeadershipEntry[],
   };
 }
@@ -164,7 +168,7 @@ export default function ResumePreview({
   className = '',
 }: ResumePreviewProps) {
   const name = contactInfo.fullName?.trim() || 'Your Name';
-  const { education, experience, projects, skills, leadership } = resolveResumeData(
+  const { summary, education, experience, projects, skills, softSkills, leadership } = resolveResumeData(
     bullets,
     tailoredResume,
   );
@@ -221,6 +225,13 @@ export default function ResumePreview({
         )}
       </header>
 
+      {summary.trim() && (
+        <section>
+          <SectionTitle>Professional Summary</SectionTitle>
+          <p className="resume-summary">{summary}</p>
+        </section>
+      )}
+
       {education.length > 0 && (
         <section>
           <SectionTitle>Education</SectionTitle>
@@ -272,6 +283,22 @@ export default function ResumePreview({
                 </p>
               ) : null,
             )}
+            {softSkills.length > 0 && (
+              <p>
+                <strong>Soft Skills</strong>: {softSkills.join(', ')}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {Object.keys(skills).length === 0 && softSkills.length > 0 && (
+        <section>
+          <SectionTitle>Technical Skills</SectionTitle>
+          <div className="resume-skills">
+            <p>
+              <strong>Soft Skills</strong>: {softSkills.join(', ')}
+            </p>
           </div>
         </section>
       )}

@@ -7,7 +7,7 @@ import { createOctokitForUser, delay, fetchRepoAnalysisData } from '../lib/githu
 import { ask, parseJsonFromText } from '../lib/gemini';
 import {
   buildAnalyzeRepoPrompt,
-  extractBulletsFromResponse,
+  extractAnalyzeRepoResponse,
 } from '../lib/prompts/analyzeRepo';
 import { getOrCreateResumeSession } from '../lib/sessions';
 import {
@@ -21,13 +21,13 @@ interface RepoInput {
   displayName: string;
 }
 
-async function askGeminiForBullets(
+async function askGeminiForRepoAnalysis(
   prompt: string,
   repoName: string,
-): Promise<string[]> {
+) {
   const text = await ask(prompt);
   const parsed = parseJsonFromText<unknown>(text);
-  return extractBulletsFromResponse(parsed, repoName);
+  return extractAnalyzeRepoResponse(parsed, repoName);
 }
 
 function getCachedRepoUpdatedAt(
@@ -63,11 +63,13 @@ async function refreshRepoFingerprints(
   for (const name of repoNames) {
     try {
       const { data } = await octokit.repos.get({ owner: user.username, repo: name });
+      const createdAt = data.created_at ?? new Date().toISOString();
       const pushedAt = data.pushed_at ?? data.updated_at ?? new Date().toISOString();
       const updatedAt = data.updated_at ?? pushedAt;
       const existing = session.cachedRepos.find((r) => r.name === name);
 
       if (existing) {
+        existing.createdAt = createdAt;
         existing.pushedAt = pushedAt;
         existing.updatedAt = updatedAt;
         existing.stars = data.stargazers_count;
@@ -81,6 +83,7 @@ async function refreshRepoFingerprints(
           stars: data.stargazers_count,
           forkCount: data.forks_count,
           commitCount: 0,
+          createdAt,
           updatedAt,
           pushedAt,
         });
@@ -138,6 +141,11 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
 
       if (isBulletCacheValid(session, name)) {
         const entry = session.repoAnalysisCache![name];
+        const cachedRepo = session.cachedRepos?.find((r) => r.name === name);
+        if (cachedRepo?.createdAt) {
+          entry.createdAt = cachedRepo.createdAt;
+          entry.pushedAt = cachedRepo.pushedAt;
+        }
         rawBullets[name] = entry.bullets;
         displayNames[name] = entry.displayName || resolvedDisplayName;
         cachedRepos.push(name);
@@ -157,15 +165,22 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
         user.username,
       );
 
-      const bullets = await askGeminiForBullets(buildAnalyzeRepoPrompt(repoData), name);
+      const { bullets, skills } = await askGeminiForRepoAnalysis(
+        buildAnalyzeRepoPrompt(repoData),
+        name,
+      );
       rawBullets[name] = bullets;
 
+      const cachedRepo = session.cachedRepos?.find((r) => r.name === name);
       const repoUpdatedAt =
         getCachedRepoUpdatedAt(session, name) ?? new Date().toISOString();
 
       session.repoAnalysisCache[name] = {
         bullets,
+        skills,
         displayName: resolvedDisplayName,
+        createdAt: cachedRepo?.createdAt ?? repoData.createdAt,
+        pushedAt: cachedRepo?.pushedAt ?? repoData.pushedAt,
         repoUpdatedAt,
         analyzedAt: new Date().toISOString(),
       };

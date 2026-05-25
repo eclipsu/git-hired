@@ -5,13 +5,17 @@ export interface CachedRepo {
   stars: number;
   forkCount: number;
   commitCount: number;
+  createdAt: string;
   updatedAt: string;
   pushedAt: string;
 }
 
 export interface RepoAnalysisEntry {
   bullets: string[];
+  skills?: Record<string, string[]>;
   displayName: string;
+  createdAt?: string;
+  pushedAt?: string;
   repoUpdatedAt: string;
   analyzedAt: string;
 }
@@ -52,6 +56,31 @@ export function buildDisplayNamesFromCache(
   const result: Record<string, string> = {};
   for (const name of repoNames) {
     result[name] = cache?.[name]?.displayName ?? name;
+  }
+  return result;
+}
+
+export function aggregateRepoSkills(
+  cache: RepoAnalysisCache | null | undefined,
+  repoNames: string[],
+): Record<string, string[]> {
+  const merged = new Map<string, Set<string>>();
+
+  for (const name of repoNames) {
+    const skills = cache?.[name]?.skills;
+    if (!skills) continue;
+
+    for (const [category, items] of Object.entries(skills)) {
+      if (!merged.has(category)) merged.set(category, new Set());
+      for (const item of items) {
+        merged.get(category)!.add(item);
+      }
+    }
+  }
+
+  const result: Record<string, string[]> = {};
+  for (const [category, items] of merged) {
+    result[category] = [...items];
   }
   return result;
 }

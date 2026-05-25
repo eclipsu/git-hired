@@ -13,6 +13,24 @@ export function daysAgoIso(days: number): string {
   return date.toISOString();
 }
 
+export function formatResumeMonthYear(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** Resume-style project date range from GitHub created_at / pushed_at. */
+export function formatProjectDateRange(createdAt: string, pushedAt?: string): string {
+  const start = formatResumeMonthYear(createdAt);
+  if (!pushedAt) return start;
+
+  const endFormatted = formatResumeMonthYear(pushedAt);
+  if (start === endFormatted) return start;
+
+  const daysSincePush = (Date.now() - new Date(pushedAt).getTime()) / 86400000;
+  const end = daysSincePush <= 60 ? 'Present' : endFormatted;
+  return `${start} -- ${end}`;
+}
+
 function isEmptyOrMissingRepoError(err: unknown): boolean {
   if (!(err instanceof RequestError)) return false;
   if (err.status === 404) return true;
@@ -62,6 +80,8 @@ export interface CommitDetail {
 
 export interface RepoAnalysisData {
   repoName: string;
+  createdAt: string;
+  pushedAt: string;
   stars: number;
   languages: Record<string, number>;
   commits: CommitDetail[];
@@ -149,6 +169,8 @@ export async function fetchRepoAnalysisData(
 
   return {
     repoName,
+    createdAt: repoMeta.created_at ?? new Date().toISOString(),
+    pushedAt: repoMeta.pushed_at ?? repoMeta.updated_at ?? new Date().toISOString(),
     stars: repoMeta.stargazers_count,
     languages,
     commits: commitDetails,

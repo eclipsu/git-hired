@@ -4,8 +4,15 @@ import { User } from '../db/entities/User';
 import { ResumeSession } from '../db/entities/ResumeSession';
 import { AppDataSource } from '../db/dataSource';
 import { ask } from '../lib/gemini';
-import { buildTailorPrompt, parseTailorResponse } from '../lib/prompts/tailor';
+import {
+  applyProjectDatesFromRepos,
+  buildTailorPrompt,
+  parseTailorResponse,
+  type RepoDateMeta,
+} from '../lib/prompts/tailor';
 import { ContactInfo, generateLatex } from '../lib/latex';
+import { formatProjectDateRange } from '../lib/github';
+import { aggregateRepoSkills } from '../lib/repoCache';
 import { getOrCreateResumeSession } from '../lib/sessions';
 
 const router = Router();
@@ -37,15 +44,46 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     const session = await getOrCreateResumeSession(user);
     const resumeText = parsedResumeText?.trim() || session.uploadedResumeText?.trim() || undefined;
 
+    const repoMeta: RepoDateMeta[] = [];
+    const seenRepos = new Set<string>();
+    for (const bullet of includedBullets) {
+      if (seenRepos.has(bullet.repo)) continue;
+      seenRepos.add(bullet.repo);
+
+      const cached = session.cachedRepos?.find((r) => r.name === bullet.repo);
+      const analysis = session.repoAnalysisCache?.[bullet.repo];
+      const createdAt = cached?.createdAt ?? analysis?.createdAt;
+      const pushedAt = cached?.pushedAt ?? analysis?.pushedAt;
+      if (!createdAt) continue;
+
+      repoMeta.push({
+        repo: bullet.repo,
+        displayName: bullet.displayName,
+        createdAt,
+        pushedAt,
+      });
+    }
+
+    const repoDates = repoMeta.map((m) => ({
+      displayName: m.displayName,
+      dates: formatProjectDateRange(m.createdAt, m.pushedAt),
+    }));
+
+    const selectedRepoNames = [...new Set(includedBullets.map((b) => b.repo))];
+    const repoSkills = aggregateRepoSkills(session.repoAnalysisCache, selectedRepoNames);
+
     const prompt = buildTailorPrompt({
       bullets: includedBullets,
       parsedResumeText: resumeText,
       userNotes: notes,
       jobDescription,
+      repoDates,
+      repoSkills,
     });
 
     const text = await ask(prompt);
-    const tailored = parseTailorResponse(text);
+    let tailored = parseTailorResponse(text);
+    tailored = applyProjectDatesFromRepos(tailored, includedBullets, repoMeta);
 
     if (!contactInfo?.fullName || !contactInfo.phone || !contactInfo.email || !contactInfo.github) {
       res.status(400).json({ error: 'Contact info is incomplete. Please fill in name, phone, email, and GitHub.' });

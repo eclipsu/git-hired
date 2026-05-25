@@ -54,6 +54,7 @@ async function fetchReposFromGitHub(user: User): Promise<CachedRepo[]> {
       stars: repo.stargazers_count,
       forkCount: repo.forks_count,
       commitCount,
+      createdAt: repo.created_at ?? new Date().toISOString(),
       updatedAt: repo.updated_at ?? new Date().toISOString(),
       pushedAt: repo.pushed_at ?? repo.updated_at ?? new Date().toISOString(),
     });
