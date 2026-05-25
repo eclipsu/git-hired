@@ -71,7 +71,6 @@ function inferSkills(bullets: BulletItem[]): Record<string, string[]> {
 function resolveResumeData(bullets: BulletItem[], tailoredResume?: TailoredResume | null) {
   if (tailoredResume) {
     return {
-      summary: tailoredResume.summary ?? '',
       education: tailoredResume.education ?? [],
       experience: tailoredResume.experience ?? [],
       projects: tailoredResume.projects ?? [],
@@ -82,7 +81,6 @@ function resolveResumeData(bullets: BulletItem[], tailoredResume?: TailoredResum
   }
 
   return {
-    summary: '',
     education: [] as EducationEntry[],
     experience: [] as ResumeEntry[],
     projects: bulletsToProjects(bullets),
@@ -168,7 +166,7 @@ export default function ResumePreview({
   className = '',
 }: ResumePreviewProps) {
   const name = contactInfo.fullName?.trim() || 'Your Name';
-  const { summary, education, experience, projects, skills, softSkills, leadership } = resolveResumeData(
+  const { education, experience, projects, skills, softSkills, leadership } = resolveResumeData(
     bullets,
     tailoredResume,
   );
@@ -224,13 +222,6 @@ export default function ResumePreview({
           </p>
         )}
       </header>
-
-      {summary.trim() && (
-        <section>
-          <SectionTitle>Professional Summary</SectionTitle>
-          <p className="resume-summary">{summary}</p>
-        </section>
-      )}
 
       {education.length > 0 && (
         <section>

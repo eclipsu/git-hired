@@ -32,7 +32,6 @@ export function computeAtsMatch(jobDescription: string, bulletText: string): num
 }
 
 export function tailoredResumeToText(resume: {
-  summary?: string;
   skills?: Record<string, string[]>;
   softSkills?: string[];
   experience?: { bullets: string[]; title?: string; org?: string }[];
@@ -40,8 +39,6 @@ export function tailoredResumeToText(resume: {
   leadership?: { bullets: string[]; role?: string; org?: string }[];
 }): string {
   const parts: string[] = [];
-
-  if (resume.summary) parts.push(resume.summary);
 
   if (resume.skills) {
     for (const [category, items] of Object.entries(resume.skills)) {

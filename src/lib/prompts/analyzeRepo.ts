@@ -18,29 +18,37 @@ const SKILL_CATEGORIES = [
   'Research Methodologies',
 ];
 
-function buildSystemInstruction(repoName: string): string {
+function buildSystemInstruction(): string {
   const categoryList = SKILL_CATEGORIES.map((c) => `"${c}"`).join(', ');
 
-  return `You are an expert technical resume writer. I will give you GitHub data for a repository. Generate 2–4 professional resume bullet points AND infer technical skills evidenced in the repo data.
+  return `You are an expert technical resume writer. I will give you GitHub data for a repository. Read the commit timeline and PR history as an evolution story — compare what changed between commits and infer the engineering decisions, tradeoffs, and architecture choices the developer made.
+
+Generate 2–4 professional resume bullet points AND infer technical skills evidenced in the repo data.
+
+ANALYSIS APPROACH:
+1. Read commits chronologically (oldest → newest) and identify major phases: initial setup, core features, refactors, integrations, deployment, etc.
+2. Compare adjacent commits to infer WHY changes were made — not just WHAT changed.
+3. Synthesize decisions into bullets about architecture, patterns, integrations, and user-facing outcomes.
 
 Each bullet MUST:
 - Start with a strong past-tense action verb (Architected, Engineered, Implemented, Designed, Automated, Migrated, etc.)
-- Include exact specifics: number of endpoints, entities, modules, strategies, files, steps, retries, limits, etc.
-- Name the actual patterns and technologies used (RBAC, JWT, WebSocket, OAuth, etc.)
-- Include concrete constraints where present (file size caps, token expiry, pagination size, MIME types, permission counts)
-- Be 1–2 lines max, zero filler words ("robust", "comprehensive", "optimized" are banned unless followed by proof)
+- Describe engineering decisions, system design, and technical tradeoffs — NOT raw diff stats
+- Name actual patterns and technologies (RBAC, JWT, WebSocket, OAuth, REST, CI/CD, etc.)
+- Include meaningful specifics: number of endpoints, auth flows, deployment targets, data models — only when evidenced in commits/README/PRs
+- Be 1–2 lines max, zero filler words
 
+STRICTLY BANNED in bullets (never use these as achievements):
+- File counts ("55 files", "across 12 modules", "touched N files")
+- Lines of code ("4182 lines", "+500 LOC", "generating X lines")
+- Vague volume metrics with no technical meaning
+- Words like "robust", "comprehensive", "optimized" without proof
+
+BAD: "Modified 55 files across 12 modules generating 4182 lines of code."
 BAD: "Implemented a robust deployment strategy across Vercel and EC2, including Dockerization."
 GOOD: "Deployed frontend to Vercel and containerized Express backend with Docker on EC2, configuring 3 environment stages and a Nginx reverse proxy routing /api traffic to port 3000."
+GOOD: "Refactored monolithic route handlers into a service layer with TypeORM repositories, separating auth middleware from business logic to support role-based access across 4 user types."
 
-For the skills object, scan commit messages, PR titles/bodies, README, and language breakdown. Include ONLY categories where you find evidence — omit empty categories. Explicitly look for:
-- Computer Science concepts (e.g., data structures, algorithms, concurrency, distributed systems)
-- Software design patterns (e.g., MVC, observer, factory, singleton, repository pattern)
-- Documentation practices (e.g., API docs, Swagger/OpenAPI, JSDoc, technical writing)
-- Networking (e.g., TCP/IP, HTTP/REST, WebSockets, DNS, load balancing)
-- Firmware (e.g., embedded C, RTOS, microcontrollers, device drivers)
-- Kubernetes & container orchestration (e.g., Docker, K8s, Helm, ECS, pod deployment)
-- Research methodologies (e.g., literature review, experimental design, statistical analysis)
+For the skills object, scan commit messages, PR titles/bodies, README, and language breakdown. Include ONLY categories where you find evidence — omit empty categories.
 
 Return ONLY valid JSON, no markdown fences, no preamble:
 {
@@ -57,14 +65,14 @@ Use these skill category keys when applicable: ${categoryList}. Only include cat
 export function buildAnalyzeRepoPrompt(data: RepoAnalysisData): string {
   const languageList = Object.entries(data.languages)
     .sort(([, a], [, b]) => b - a)
-    .map(([lang, bytes]) => `${lang} (${bytes} bytes)`)
+    .map(([lang]) => lang)
     .join(', ');
 
-  const commitLines = data.commits
-    .slice(0, 40)
+  const chronological = [...data.commits].slice(0, 40).reverse();
+  const commitLines = chronological
     .map(
       (c, i) =>
-        `${i + 1}. "${c.message.split('\n')[0]}" — ${c.filesChanged} files, +${c.additions}/-${c.deletions}`,
+        `${i + 1}. "${c.message.split('\n')[0]}"`,
     )
     .join('\n');
 
@@ -75,9 +83,9 @@ export function buildAnalyzeRepoPrompt(data: RepoAnalysisData): string {
     })
     .join('\n');
 
-  const readmeExcerpt = data.readme.slice(0, 500);
+  const readmeExcerpt = data.readme.slice(0, 800);
 
-  return `${buildSystemInstruction(data.repoName)}
+  return `${buildSystemInstruction()}
 
 GitHub data:
 
@@ -86,7 +94,7 @@ Created: ${data.createdAt}
 Stars: ${data.stars}
 Languages: ${languageList || 'Unknown'}
 
-Commit messages (top ${Math.min(data.commits.length, 40)}):
+Commit timeline (oldest → newest, ${chronological.length} commits — compare adjacent entries to infer decisions):
 ${commitLines || 'None'}
 
 Merged pull requests by user:
@@ -118,14 +126,12 @@ export function extractAnalyzeRepoResponse(
 
   const obj = parsed as Record<string, unknown>;
 
-  // New schema: { bullets: [...], skills: {...} }
   if (Array.isArray(obj.bullets)) {
     const bullets = obj.bullets.filter((b): b is string => typeof b === 'string');
     if (bullets.length === 0) throw new Error('Gemini response missing bullet array');
     return { bullets, skills: normalizeSkills(obj.skills) };
   }
 
-  // Legacy schema: { "repoName": ["bullet 1", ...] }
   const legacyBullets =
     obj[repoName] ??
     obj.repoName ??

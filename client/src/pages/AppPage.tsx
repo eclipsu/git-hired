@@ -5,6 +5,7 @@ import AppBackground from '../components/app/AppBackground';
 import AppNav from '../components/app/AppNav';
 import StepAnalyze from '../components/app/StepAnalyze';
 import StepEnrich from '../components/app/StepEnrich';
+import StepBullets from '../components/app/StepBullets';
 import StepTailor from '../components/app/StepTailor';
 import StepExport from '../components/app/StepExport';
 import {
@@ -46,6 +47,7 @@ interface SessionPayload {
   selectedRepos: string[];
   bullets: Record<string, string[]>;
   displayNames: Record<string, string>;
+  selectedBullets?: BulletItem[] | null;
   uploadedResumeText: string | null;
   uploadedResumeFilename: string | null;
   userNotes: string;
@@ -114,9 +116,14 @@ export default function AppPage() {
         if (!session) return;
 
         if (session.bullets && Object.keys(session.bullets).length > 0) {
-          patch({
-            bullets: bulletsFromResponse(session.bullets, session.displayNames ?? {}),
-          });
+          const displayNames = session.displayNames ?? {};
+          if (session.selectedBullets?.length) {
+            patch({ bullets: session.selectedBullets });
+          } else {
+            patch({
+              bullets: bulletsFromResponse(session.bullets, displayNames),
+            });
+          }
         }
 
         savedContactRef.current = session.contactInfo;
@@ -324,6 +331,15 @@ export default function AppPage() {
     }
   };
 
+  const saveBullets = async (bullets: BulletItem[]) => {
+    await fetch('/api/session/bullets', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bullets }),
+    });
+  };
+
   const handleTailor = async () => {
     setGenerating(true);
     setError(null);
@@ -426,18 +442,23 @@ export default function AppPage() {
             pendingChatField={pendingChatField}
             extractingProfile={extractingProfile}
             contactComplete={contactComplete}
-            onToggleBullet={(id) =>
-              patch({
-                bullets: state.bullets.map((b) =>
-                  b.id === id ? { ...b, included: !b.included } : b,
-                ),
-              })
-            }
             onNotesChange={handleNotesChange}
             onFileSelect={handleParseResume}
             onContactFieldChange={onContactFieldChange}
             onChatSend={onChatSend}
-            onContinue={() => setStep('tailor')}
+            onContinue={() => setStep('bullets')}
+          />
+        )}
+
+        {state.step === 'bullets' && (
+          <StepBullets
+            bullets={state.bullets}
+            onChange={(bullets) => patch({ bullets })}
+            onContinue={async (bullets) => {
+              patch({ bullets });
+              await saveBullets(bullets);
+              setStep('tailor');
+            }}
           />
         )}
 

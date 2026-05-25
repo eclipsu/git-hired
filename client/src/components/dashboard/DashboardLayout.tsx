@@ -6,7 +6,6 @@ import {
   FolderGit2,
   LayoutDashboard,
   LogOut,
-  Settings,
   Sparkles,
 } from 'lucide-react';
 
@@ -25,7 +24,6 @@ const NAV = [
   { to: '/dashboard/versions', label: 'Tailored Resumes', icon: Sparkles },
   { to: '/dashboard', label: 'Projects', icon: FolderGit2, end: true },
   { to: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/dashboard', label: 'Settings', icon: Settings, end: true },
 ];
 
 const PAGE_SUBTITLES: Record<string, string> = {
@@ -63,7 +61,7 @@ export default function DashboardLayout() {
               end={item.end}
               className={({ isActive }) =>
                 `flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive && item.label !== 'Projects' && item.label !== 'Settings'
+                  isActive && item.label !== 'Projects'
                     ? 'bg-purple-50 text-[#7C3AED]'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`

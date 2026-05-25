@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { TailoredResume } from '../types/resume';
 
-export type AppStep = 'connect' | 'analyze' | 'enrich' | 'tailor' | 'export';
+export type AppStep = 'connect' | 'analyze' | 'enrich' | 'bullets' | 'tailor' | 'export';
 
 export interface RepoItem {
   name: string;
@@ -50,6 +50,7 @@ export const STEP_ORDER: AppStep[] = [
   'connect',
   'analyze',
   'enrich',
+  'bullets',
   'tailor',
   'export',
 ];
@@ -58,6 +59,7 @@ export const STEP_LABELS: Record<AppStep, string> = {
   connect: 'Connect',
   analyze: 'Analyze',
   enrich: 'Enrich',
+  bullets: 'Bullets',
   tailor: 'Tailor',
   export: 'Export',
 };

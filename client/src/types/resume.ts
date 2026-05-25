@@ -29,7 +29,6 @@ export interface LeadershipEntry {
 }
 
 export interface TailoredResume {
-  summary?: string;
   skills: Record<string, string[]>;
   softSkills?: string[];
   experience: ResumeEntry[];

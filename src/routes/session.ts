@@ -89,4 +89,42 @@ router.put('/notes', requireAuth, async (req: Request, res: Response, next: Next
   }
 });
 
+router.put('/bullets', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user as User;
+    const { bullets } = req.body as {
+      bullets?: { text: string; repo: string; displayName: string; included: boolean }[];
+    };
+
+    if (!Array.isArray(bullets)) {
+      res.status(400).json({ error: 'bullets must be an array' });
+      return;
+    }
+
+    const session = await getOrCreateResumeSession(user);
+    session.selectedBullets = bullets;
+
+    const rawBullets: Record<string, string[]> = {};
+    for (const b of bullets) {
+      if (!rawBullets[b.repo]) rawBullets[b.repo] = [];
+      rawBullets[b.repo].push(b.text);
+    }
+    session.rawBullets = rawBullets;
+
+    if (session.repoAnalysisCache) {
+      for (const b of bullets) {
+        const entry = session.repoAnalysisCache[b.repo];
+        if (!entry) continue;
+        entry.bullets = rawBullets[b.repo] ?? [];
+        entry.displayName = b.displayName;
+      }
+    }
+
+    await AppDataSource.getRepository(ResumeSession).save(session);
+    res.json({ bullets: session.selectedBullets });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

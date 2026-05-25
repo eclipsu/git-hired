@@ -58,7 +58,6 @@ export interface LeadershipEntry {
 }
 
 export interface TailoredResume {
-  summary: string;
   skills: Record<string, string[]>;
   softSkills?: string[];
   experience: ResumeEntry[];
@@ -174,19 +173,6 @@ ${blocks}
 `;
 }
 
-function summarySection(summary: string): string {
-  const text = summary.trim();
-  if (!text) return '';
-
-  return `%-----------PROFESSIONAL SUMMARY-----------
-\\section{Professional Summary}
- \\begin{itemize}[leftmargin=0.15in, label={}]
-    \\small{\\item{${escapeLatex(text)}}}
- \\end{itemize}
- \\vspace{-12pt}
-`;
-}
-
 function skillsSection(skills: Record<string, string[]>, softSkills?: string[]): string {
   const lines = Object.entries(skills ?? {})
     .filter(([, items]) => items.length > 0)
@@ -279,7 +265,6 @@ export function generateLatex(resume: TailoredResume, contact: ContactInfo): str
   const preamble = loadPreamble();
   const body = [
     headingSection(contact),
-    summarySection(resume.summary ?? ''),
     educationSection(resume.education ?? []),
     experienceSection(resume.experience ?? []),
     projectsSection(resume.projects ?? []),
