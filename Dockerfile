@@ -12,6 +12,7 @@ RUN apt-get update \
     texlive-fonts-recommended \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 # latex-extra: titlesec, enumitem, etc. Do NOT add texlive-fonts-extra (~500MB).
+# fontawesome5 icons are vendored in tex/texmf/ (~750KB).
 
 WORKDIR /app
 

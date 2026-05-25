@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Readable } from 'stream';
-import latex from 'node-latex';
 import { requireAuth } from '../middleware/requireAuth';
+import { compileTexToPdf } from '../lib/latexCompile';
 import { isPdflatexAvailable, pdflatexErrorMessage } from '../lib/pdflatex';
 
 const router = Router();
@@ -24,22 +23,20 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const input = Readable.from([tex]);
-    const pdf = latex(input, { errorLogs: 'buffer' as unknown as string });
-    const chunks: Buffer[] = [];
-
-    pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
-    pdf.on('end', () => {
+    try {
+      const pdfBuffer = await compileTexToPdf(tex);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'inline; filename="resume.pdf"');
-      res.send(Buffer.concat(chunks));
-    });
-    pdf.on('error', (err: Error) => {
-      const message = err.message.includes('Unable to run pdflatex')
-        ? pdflatexErrorMessage()
-        : err.message;
+      res.send(pdfBuffer);
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message.includes('Unable to run pdflatex')
+          ? pdflatexErrorMessage()
+          : err instanceof Error
+            ? err.message
+            : 'PDF compilation failed';
       res.status(422).json({ error: message });
-    });
+    }
   } catch (err) {
     next(err);
   }

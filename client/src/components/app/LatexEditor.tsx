@@ -20,7 +20,7 @@ export default function LatexEditor({ value, onChange, className = '' }: LatexEd
       height="100%"
       extensions={extensions}
       onChange={onChange}
-      className={`h-full overflow-hidden rounded-xl border border-gray-700 text-sm ${className}`}
+      className={`h-full min-h-0 overflow-hidden rounded-xl border border-gray-700 text-sm ${className}`}
       theme="dark"
       basicSetup={{
         lineNumbers: true,

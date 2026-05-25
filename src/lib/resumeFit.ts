@@ -1,8 +1,7 @@
-import { Readable } from 'stream';
-import latex from 'node-latex';
 import pdfParse from 'pdf-parse';
 import { ask } from './gemini';
 import { ContactInfo, generateLatex, TailoredResume } from './latex';
+import { compileTexToPdf } from './latexCompile';
 import { isPdflatexAvailable } from './pdflatex';
 import {
   buildExpandResumePrompt,
@@ -21,18 +20,6 @@ export interface FitResumeResult {
   fitIterations: number;
   fitWarning: string | null;
   skipped: boolean;
-}
-
-function compileTexToPdf(tex: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const input = Readable.from([tex]);
-    const pdf = latex(input, { errorLogs: 'buffer' as unknown as string });
-    const chunks: Buffer[] = [];
-
-    pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
-    pdf.on('end', () => resolve(Buffer.concat(chunks)));
-    pdf.on('error', reject);
-  });
 }
 
 export async function getPageCount(pdf: Buffer): Promise<number> {

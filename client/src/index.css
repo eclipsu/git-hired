@@ -641,6 +641,12 @@ body {
   font-family: var(--ui-font-mono) !important;
   font-size: 13px !important;
   height: 100% !important;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.cm-editor .cm-scroller {
+  overflow: auto !important;
 }
 
 /* ── Resume preview (serif) ── */

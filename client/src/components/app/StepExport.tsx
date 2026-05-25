@@ -161,24 +161,24 @@ export default function StepExport({
         </AppButton>
       </div>
 
-      <div className="mt-4 grid min-h-[70vh] gap-4 lg:grid-cols-2">
-        <div className="flex min-h-[420px] flex-col rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-2 lg:min-h-0">
-          <p className="px-2 py-1 text-xs font-medium text-[var(--ui-fg-muted)]">LaTeX source</p>
-          <div className="min-h-[380px] flex-1 lg:min-h-0">
+      <div className="mt-4 grid gap-4 lg:h-[min(72vh,calc(100vh-14rem))] lg:grid-cols-2">
+        <div className="flex h-[min(50vh,420px)] min-h-0 flex-col overflow-hidden rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-2 lg:h-auto">
+          <p className="shrink-0 px-2 py-1 text-xs font-medium text-[var(--ui-fg-muted)]">LaTeX source</p>
+          <div className="min-h-0 flex-1 overflow-hidden">
             <LatexEditor value={editorTex} onChange={(v) => { setEditorTex(v); onTexChange(v); }} />
           </div>
         </div>
-        <div className="relative flex min-h-[420px] flex-col rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-4">
-          <p className="mb-2 text-xs font-medium text-[var(--ui-fg-muted)]">PDF preview</p>
+        <div className="relative flex h-[min(60vh,520px)] min-h-0 flex-col overflow-hidden rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-4 lg:h-auto">
+          <p className="mb-2 shrink-0 text-xs font-medium text-[var(--ui-fg-muted)]">PDF preview</p>
           {compiling && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-[var(--ui-canvas-subtle)]/90">
               <Spinner className="h-8 w-8" />
             </div>
           )}
           {pdfUrl ? (
-            <iframe title="PDF preview" src={pdfUrl} className="min-h-[380px] flex-1 rounded-md bg-white" />
+            <iframe title="PDF preview" src={pdfUrl} className="min-h-0 flex-1 rounded-md bg-white" />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-[var(--ui-fg-muted)]">Compile to preview</div>
+            <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-[var(--ui-fg-muted)]">Compile to preview</div>
           )}
         </div>
       </div>
