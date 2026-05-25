@@ -10,4 +10,5 @@ env.ec2.copy
 *.db
 *.log
 .DS_Store
+agents.md
 buffer
