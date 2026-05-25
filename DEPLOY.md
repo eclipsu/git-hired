@@ -119,7 +119,7 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
 | Docker build stuck at `npm run build` | t3.micro OOM/slow — pull latest (prod Docker skips client/Vite build). Add swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` |
 | Docker build `No space left on device` on texlive | **Pull latest first** — old Dockerfiles included `texlive-fonts-extra` (~500MB). Verify: `grep fonts-extra Dockerfile` must print nothing. Then: `sudo docker system prune -af && sudo docker builder prune -af`, check `df -h /`, add swap if under 2GB free, rebuild with `--no-cache`. |
-| PDF compile fails | Check `docker compose logs`; ensure `tex/` is in image (rebuild). Missing icons → rebuild image with latest Dockerfile (needs `texlive-latex-extra`, not fonts-extra). |
+| PDF compile fails / `fontawesome5.sty` not found | Latest template uses marvosym + hyperref (no fontawesome5). Pull latest, rebuild. Needs `texlive-latex-recommended` only. |
 | Vercel 404 on `/app` or `/connect` | Ensure `vercel.json` has SPA fallback rewrite to `/index.html` |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |
 
