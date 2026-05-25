@@ -84,8 +84,20 @@ export default function StepTailor({
             <ResumePreview contactInfo={contactInfo} bullets={bullets} />
           </div>
           <AppButton variant="primary" className="mt-4 w-full" disabled={generating} onClick={onGenerate}>
-            {generating ? <><Spinner /> Generating…</> : 'Generate tailored resume'}
+            {generating ? (
+              <>
+                <Spinner />
+                Tailoring & fitting to one page…
+              </>
+            ) : (
+              'Generate tailored resume'
+            )}
           </AppButton>
+          {generating && (
+            <p className="mt-2 text-center text-xs text-[var(--ui-fg-muted)]">
+              Compiling PDF and adjusting content to fill one page. This may take up to a minute.
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -52,6 +52,9 @@ export interface AppState {
   originalTex: string;
   tailoredResume: TailoredResume | null;
   atsMatchPercent: number;
+  pageCount: number;
+  fitIterations: number;
+  fitWarning: string | null;
 }
 
 export const STEP_ORDER: AppStep[] = [
@@ -86,6 +89,9 @@ const initialState: AppState = {
   originalTex: '',
   tailoredResume: null,
   atsMatchPercent: 0,
+  pageCount: 1,
+  fitIterations: 0,
+  fitWarning: null,
 };
 
 export function useAppState() {

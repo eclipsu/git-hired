@@ -377,9 +377,12 @@ export default function AppPage() {
         throw new Error(body.error ?? 'Tailor failed');
       }
 
-      const { generatedTex, tailoredResume } = (await res.json()) as {
+      const { generatedTex, tailoredResume, pageCount, fitIterations, fitWarning } = (await res.json()) as {
         generatedTex: string;
         tailoredResume: TailoredResume;
+        pageCount?: number;
+        fitIterations?: number;
+        fitWarning?: string | null;
       };
       const atsMatchPercent = computeAtsMatch(
         state.jobDescription,
@@ -390,6 +393,9 @@ export default function AppPage() {
         originalTex: generatedTex,
         tailoredResume,
         atsMatchPercent,
+        pageCount: pageCount ?? 1,
+        fitIterations: fitIterations ?? 0,
+        fitWarning: fitWarning ?? null,
       });
       setStep('export');
     } catch (err) {
@@ -496,6 +502,9 @@ export default function AppPage() {
             tex={state.generatedTex}
             originalTex={state.originalTex}
             atsMatchPercent={state.atsMatchPercent}
+            pageCount={state.pageCount}
+            fitIterations={state.fitIterations}
+            fitWarning={state.fitWarning}
             bullets={state.bullets}
             jobDescription={state.jobDescription}
             contactInfo={contactInfo}

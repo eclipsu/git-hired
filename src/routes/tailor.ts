@@ -10,10 +10,11 @@ import {
   parseTailorResponse,
   type RepoDateMeta,
 } from '../lib/prompts/tailor';
-import { ContactInfo, generateLatex } from '../lib/latex';
+import { ContactInfo } from '../lib/latex';
 import { formatProjectDateRange } from '../lib/github';
 import { aggregateRepoSkills } from '../lib/repoCache';
 import { getOrCreateResumeSession } from '../lib/sessions';
+import { fitResumeToOnePage } from '../lib/resumeFit';
 
 const router = Router();
 
@@ -106,14 +107,18 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const generatedTex = generateLatex(tailored, {
+    const contact: ContactInfo = {
       fullName: contactInfo.fullName,
       address: contactInfo.address ?? '',
       phone: contactInfo.phone,
       email: contactInfo.email,
       linkedin: contactInfo.linkedin ?? '',
       github: contactInfo.github,
-    });
+    };
+
+    const fit = await fitResumeToOnePage(tailored, contact);
+    tailored = fit.resume;
+    const generatedTex = fit.tex;
 
     session.selectedBullets = bullets;
     session.userNotes = notes ?? '';
@@ -125,9 +130,15 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     session.generatedTex = generatedTex;
     await AppDataSource.getRepository(ResumeSession).save(session);
 
-    console.log('[tailor] Resume generated for', user.username);
+    console.log('[tailor] Resume generated for', user.username, `(${fit.pageCount} page(s), ${fit.fitIterations} fit pass(es))`);
 
-    res.json({ tailoredResume: tailored, generatedTex });
+    res.json({
+      tailoredResume: tailored,
+      generatedTex,
+      pageCount: fit.pageCount,
+      fitIterations: fit.fitIterations,
+      fitWarning: fit.fitWarning,
+    });
   } catch (err) {
     next(err);
   }

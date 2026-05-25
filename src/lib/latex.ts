@@ -91,13 +91,17 @@ ${bullets.map((b) => `        \\resumeItem{${escapeLatex(b)}}`).join('\n')}
       \\resumeItemListEnd`;
 }
 
+function sectionHeading(name: string): string {
+  return `\\needspace{4\\baselineskip}\n\\section{${name}}`;
+}
+
 function experienceSection(entries: ResumeEntry[]): string {
   if (entries.length === 0) {
     return `%-----------EXPERIENCE-----------
-\\section{Experience}
+${sectionHeading('Experience')}
   \\resumeSubHeadingListStart
   \\resumeSubHeadingListEnd
-\\vspace{-16pt}
+\\vspace{-10pt}
 `;
   }
 
@@ -111,30 +115,30 @@ ${bulletList(entry.bullets)}`,
     .join('\n\n');
 
   return `%-----------EXPERIENCE-----------
-\\section{Experience}
+${sectionHeading('Experience')}
   \\resumeSubHeadingListStart
 
 ${blocks}
 
   \\resumeSubHeadingListEnd
-\\vspace{-16pt}
+\\vspace{-10pt}
 `;
 }
 
 function projectsSection(entries: ProjectEntry[]): string {
   if (entries.length === 0) {
     return `%-----------PROJECTS-----------
-\\section{Projects}
-    \\vspace{-8pt}
+${sectionHeading('Projects')}
+    \\vspace{-5pt}
     \\resumeSubHeadingListStart
     \\resumeSubHeadingListEnd
-\\vspace{-18pt}
+\\vspace{-10pt}
 `;
   }
 
   const blocks = entries
     .map((entry, i) => {
-      const spacing = i < entries.length - 1 ? '\n          \\vspace{-15pt}' : '';
+      const spacing = i < entries.length - 1 ? '\n          \\vspace{-8pt}' : '';
       return `      \\resumeProjectHeading
           {\\textbf{${escapeLatex(entry.name)}} $|$ \\emph{${escapeLatex(entry.techStack)}}}{${escapeLatex(entry.dates)}}
 ${bulletList(entry.bullets)}${spacing}`;
@@ -142,14 +146,14 @@ ${bulletList(entry.bullets)}${spacing}`;
     .join('\n\n');
 
   return `%-----------PROJECTS-----------
-\\section{Projects}
-    \\vspace{-5pt}
+${sectionHeading('Projects')}
+    \\vspace{-4pt}
     \\resumeSubHeadingListStart
 
 ${blocks}
 
     \\resumeSubHeadingListEnd
-\\vspace{-18pt}
+\\vspace{-10pt}
 `;
 }
 
@@ -165,7 +169,7 @@ function educationSection(entries: EducationEntry[]): string {
     .join('\n');
 
   return `%-----------EDUCATION-----------
-\\section{Education}
+${sectionHeading('Education')}
   \\resumeSubHeadingListStart
 ${blocks}
   \\resumeSubHeadingListEnd
@@ -189,22 +193,22 @@ function skillsSection(skills: Record<string, string[]>, softSkills?: string[]):
 
   if (lines.length === 0) {
     return `%-----------TECHNICAL SKILLS-----------
-\\section{Technical Skills}
+${sectionHeading('Technical Skills')}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{}}
  \\end{itemize}
- \\vspace{-16pt}
+ \\vspace{-10pt}
 `;
   }
 
   return `%-----------TECHNICAL SKILLS-----------
-\\section{Technical Skills}
+${sectionHeading('Technical Skills')}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
 ${lines.join('\n')}
     }}
  \\end{itemize}
- \\vspace{-16pt}
+ \\vspace{-10pt}
 `;
 }
 
@@ -219,7 +223,7 @@ ${bulletList(entry.bullets)}`,
     .join('\n');
 
   return `%-----------LEADERSHIP---------------
-\\section{Leadership}
+${sectionHeading('Leadership')}
     \\resumeSubHeadingListStart
 ${blocks}
     \\resumeSubHeadingListEnd
@@ -243,7 +247,7 @@ function headingSection(contact: ContactInfo): string {
     \\href{mailto:${escapeLatex(contact.email)}}{\\Letter\\ \\underline{${escapeLatex(contact.email)}}} ~
     \\href{${escapeLatex(linkedin.url)}}{LinkedIn: \\underline{${escapeLatex(linkedin.label)}}}  ~
     \\href{${escapeLatex(github.url)}}{GitHub: \\underline{${escapeLatex(github.label)}}}
-    \\vspace{-8pt}
+    \\vspace{-5pt}
 \\end{center}
 
 `;

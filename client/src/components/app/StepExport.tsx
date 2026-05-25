@@ -14,6 +14,9 @@ interface StepExportProps {
   tex: string;
   originalTex: string;
   atsMatchPercent: number;
+  pageCount: number;
+  fitIterations: number;
+  fitWarning: string | null;
   bullets: BulletItem[];
   jobDescription: string;
   contactInfo: ContactInfo;
@@ -36,6 +39,9 @@ export default function StepExport({
   tex,
   originalTex,
   atsMatchPercent,
+  pageCount,
+  fitIterations,
+  fitWarning,
   bullets,
   jobDescription,
   contactInfo,
@@ -129,8 +135,15 @@ export default function StepExport({
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={onRetailer} className="ui-link cursor-pointer text-sm">← Re-tailor</button>
         <AppLabel variant="accent">ATS {atsMatchPercent}%</AppLabel>
+        {pageCount === 1 && fitIterations > 0 && (
+          <AppLabel variant="success">Fitted in {fitIterations} pass{fitIterations === 1 ? '' : 'es'}</AppLabel>
+        )}
         <Link to="/dashboard" className="ui-btn ui-btn-default ui-btn-sm ml-auto">Dashboard</Link>
       </div>
+
+      {fitWarning && (
+        <AppFlash variant="warn">{fitWarning}</AppFlash>
+      )}
 
       <h2 className="text-base font-semibold">LaTeX editor & PDF</h2>
       <p className="mt-1 text-sm text-[var(--ui-fg-muted)]">Edit source, compile, and download.</p>
