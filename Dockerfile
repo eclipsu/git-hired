@@ -11,8 +11,8 @@ RUN apt-get update \
     texlive-latex-recommended \
     texlive-latex-extra \
     texlive-fonts-recommended \
-    texlive-fonts-extra \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+# fontawesome5 (\faGithub, \faLinkedin, etc.) ships in texlive-latex-extra — NOT texlive-fonts-extra (~500MB, breaks small EC2 builds)
 
 WORKDIR /app
 
