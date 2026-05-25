@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import GitHubBox from '../components/github/GitHubBox';
-import { GitHubLabel } from '../components/github/GitHubBox';
+import AppBox from '../components/ui/AppBox';
+import { AppLabel } from '../components/ui/AppBox';
 import Spinner from '../components/ui/Spinner';
 
 interface DashboardStats {
@@ -54,34 +54,34 @@ export default function Dashboard() {
     <div className="pb-16">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => (
-          <GitHubBox key={c.label}>
-            <p className="text-2xl font-semibold text-[var(--gh-fg-default)]">{c.value}</p>
-            <p className="mt-1 text-sm text-[var(--gh-fg-muted)]">{c.label}</p>
-          </GitHubBox>
+          <AppBox key={c.label}>
+            <p className="text-2xl font-semibold text-[var(--ui-fg-default)]">{c.value}</p>
+            <p className="mt-1 text-sm text-[var(--ui-fg-muted)]">{c.label}</p>
+          </AppBox>
         ))}
       </div>
 
-      <GitHubBox className="mt-6">
-        <div className="gh-box-header">
-          <h3 className="gh-box-title">Top repositories</h3>
-          <Link to="/app" className="gh-link text-sm">View all</Link>
+      <AppBox className="mt-6">
+        <div className="ui-box-header">
+          <h3 className="ui-box-title">Top repositories</h3>
+          <Link to="/app" className="ui-link text-sm">View all</Link>
         </div>
-        <ul className="divide-y divide-[var(--gh-border-muted)]">
+        <ul className="divide-y divide-[var(--ui-border-muted)]">
           {(stats?.topProjects ?? []).map((p) => (
             <li key={p.name} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-              <input type="checkbox" checked={selected[p.name] ?? false} onChange={() => setSelected((s) => ({ ...s, [p.name]: !s[p.name] }))} className="gh-checkbox mt-1" />
+              <input type="checkbox" checked={selected[p.name] ?? false} onChange={() => setSelected((s) => ({ ...s, [p.name]: !s[p.name] }))} className="ui-checkbox mt-1" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-[var(--gh-accent-fg)]">{p.name}</p>
-                  <span className="shrink-0 text-xs text-[var(--gh-fg-subtle)]">{relativeTime(p.updatedAt)}</span>
+                  <p className="text-sm font-semibold text-[var(--ui-accent-fg)]">{p.name}</p>
+                  <span className="shrink-0 text-xs text-[var(--ui-fg-subtle)]">{relativeTime(p.updatedAt)}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-[var(--gh-fg-muted)]">{p.description || 'No description'}</p>
-                {p.primaryLanguage && <GitHubLabel variant="success">{p.primaryLanguage}</GitHubLabel>}
+                <p className="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{p.description || 'No description'}</p>
+                {p.primaryLanguage && <AppLabel variant="success">{p.primaryLanguage}</AppLabel>}
               </div>
             </li>
           ))}
         </ul>
-      </GitHubBox>
+      </AppBox>
 
       <div className="fixed bottom-6 right-6">
         <Link to="/app" className="btn-primary">Build resume</Link>

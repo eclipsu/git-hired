@@ -423,7 +423,7 @@ export default function AppPage() {
 
       {error && (
         <div className="mx-auto max-w-6xl px-4 pt-4">
-          <div className="gh-flash gh-flash-error">{error}</div>
+          <div className="ui-flash ui-flash-error">{error}</div>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { STEP_LABELS, STEP_ORDER, type AppStep } from '../../hooks/useAppState';
-import GitHubHeader, { GitHubSubNav } from '../github/GitHubHeader';
-import { ghBtnClass } from '../github/GitHubButton';
+import AppHeader, { AppSubNav } from '../ui/AppHeader';
+import { uiBtnClass } from '../ui/AppButton';
 
 interface AppNavProps {
   current: AppStep;
@@ -18,14 +18,14 @@ export default function AppNav({ current, completed }: AppNavProps) {
 
   return (
     <>
-      <GitHubHeader
+      <AppHeader
         right={
-          <Link to="/dashboard" className={`${ghBtnClass('invisible')} gh-btn-sm !text-white/80 hover:!text-white`}>
+          <Link to="/dashboard" className={`${uiBtnClass('invisible')} ui-btn-sm !text-white/80 hover:!text-white`}>
             Dashboard
           </Link>
         }
       />
-      <GitHubSubNav items={subnavItems} />
+      <AppSubNav items={subnavItems} />
     </>
   );
 }

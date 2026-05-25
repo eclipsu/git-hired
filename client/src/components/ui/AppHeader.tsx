@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { GitHiredLogo } from './GitHubMark';
+import { GitHiredLogo } from './AppLogo';
 
 interface NavItem {
   to: string;
@@ -7,25 +7,25 @@ interface NavItem {
   end?: boolean;
 }
 
-interface GitHubHeaderProps {
+interface AppHeaderProps {
   nav?: NavItem[];
   right?: React.ReactNode;
 }
 
-export default function GitHubHeader({ nav, right }: GitHubHeaderProps) {
+export default function AppHeader({ nav, right }: AppHeaderProps) {
   return (
-    <header className="gh-header">
-      <div className="gh-header-inner">
+    <header className="ui-header">
+      <div className="ui-header-inner">
         <GitHiredLogo to="/dashboard" />
 
         {nav && nav.length > 0 && (
-          <nav className="gh-header-nav">
+          <nav className="ui-header-nav">
             {nav.map((item) => (
               <NavLink
                 key={item.to + item.label}
                 to={item.to}
                 end={item.end}
-                className={({ isActive }) => `gh-header-nav-item${isActive ? ' gh-header-nav-item-active' : ''}`}
+                className={({ isActive }) => `ui-header-nav-item${isActive ? ' ui-header-nav-item-active' : ''}`}
               >
                 {item.label}
               </NavLink>
@@ -33,27 +33,25 @@ export default function GitHubHeader({ nav, right }: GitHubHeaderProps) {
           </nav>
         )}
 
-        <div className="gh-header-actions">
-          {right}
-        </div>
+        <div className="ui-header-actions">{right}</div>
       </div>
     </header>
   );
 }
 
-export function GitHubSubNav({
+export function AppSubNav({
   items,
 }: {
   items: { key: string; label: string; active?: boolean; done?: boolean }[];
 }) {
   return (
-    <nav className="gh-subnav" aria-label="Progress">
+    <nav className="ui-subnav" aria-label="Progress">
       {items.map((item) => (
         <span
           key={item.key}
-          className={`gh-subnav-item${item.active ? ' gh-subnav-item-active' : ''}${item.done ? ' gh-subnav-item-done' : ''}`}
+          className={`ui-subnav-item${item.active ? ' ui-subnav-item-active' : ''}${item.done ? ' ui-subnav-item-done' : ''}`}
         >
-          {item.done && !item.active && <span className="gh-subnav-check">✓</span>}
+          {item.done && !item.active && <span className="ui-subnav-check">✓</span>}
           {item.label}
         </span>
       ))}
@@ -61,7 +59,7 @@ export function GitHubSubNav({
   );
 }
 
-export function GitHubLink({
+export function AppLink({
   to,
   children,
   className = '',
@@ -71,7 +69,7 @@ export function GitHubLink({
   className?: string;
 }) {
   return (
-    <Link to={to} className={`gh-link ${className}`}>
+    <Link to={to} className={`ui-link ${className}`}>
       {children}
     </Link>
   );

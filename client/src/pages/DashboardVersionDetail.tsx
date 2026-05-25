@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import GitHubBox from '../components/github/GitHubBox';
-import GitHubButton from '../components/github/GitHubButton';
+import AppBox from '../components/ui/AppBox';
+import AppButton from '../components/ui/AppButton';
 import Spinner from '../components/ui/Spinner';
 import { copyToClipboard } from '../utils/clipboard';
-import { ghBtnClass } from '../components/github/GitHubButton';
+import { uiBtnClass } from '../components/ui/AppButton';
 
 interface VersionDetail {
   id: string;
@@ -54,8 +54,8 @@ export default function DashboardVersionDetail() {
   if (!version) {
     return (
       <div className="py-20 text-center">
-        <p className="text-[var(--gh-fg-muted)]">Version not found.</p>
-        <Link to="/dashboard/versions" className="gh-link mt-2 inline-block text-sm">← Back</Link>
+        <p className="text-[var(--ui-fg-muted)]">Version not found.</p>
+        <Link to="/dashboard/versions" className="ui-link mt-2 inline-block text-sm">← Back</Link>
       </div>
     );
   }
@@ -65,36 +65,36 @@ export default function DashboardVersionDetail() {
 
   return (
     <div>
-      <Link to="/dashboard/versions" className="gh-link text-sm">← Saved versions</Link>
+      <Link to="/dashboard/versions" className="ui-link text-sm">← Saved versions</Link>
       <h2 className="mt-4 text-base font-semibold">{version.name}</h2>
-      <p className="text-sm text-[var(--gh-fg-muted)]">{new Date(version.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+      <p className="text-sm text-[var(--ui-fg-muted)]">{new Date(version.createdAt).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {pdfUrl && <a href={pdfUrl} download="resume.pdf" className={ghBtnClass('primary') + ' gh-btn-sm'}>Download PDF</a>}
-        <GitHubButton variant="primary" className="gh-btn-sm" disabled={sharing} onClick={async () => {
+        {pdfUrl && <a href={pdfUrl} download="resume.pdf" className={uiBtnClass('primary') + ' ui-btn-sm'}>Download PDF</a>}
+        <AppButton variant="primary" className="ui-btn-sm" disabled={sharing} onClick={async () => {
           if (!id) return;
           setSharing(true);
           try {
             const res = await fetch(`/api/versions/${id}/share`, { method: 'POST', credentials: 'include' });
             setShareUrl(((await res.json()) as { url: string }).url);
           } finally { setSharing(false); }
-        }}>{sharing ? 'Creating…' : 'Share link'}</GitHubButton>
+        }}>{sharing ? 'Creating…' : 'Share link'}</AppButton>
         {activeUrl && (
-          <GitHubButton variant="default" className="gh-btn-sm" onClick={async () => {
+          <AppButton variant="default" className="ui-btn-sm" onClick={async () => {
             await copyToClipboard(activeUrl);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-          }}>{copied ? 'Copied' : 'Copy link'}</GitHubButton>
+          }}>{copied ? 'Copied' : 'Copy link'}</AppButton>
         )}
       </div>
 
-      {activeUrl && <p className="mt-2 font-mono text-xs text-[var(--gh-fg-muted)]">{activeUrl}{existingLink && ` · ${existingLink.clickCount} clicks`}</p>}
+      {activeUrl && <p className="mt-2 font-mono text-xs text-[var(--ui-fg-muted)]">{activeUrl}{existingLink && ` · ${existingLink.clickCount} clicks`}</p>}
 
-      <GitHubBox className="relative mt-6 !p-4">
+      <AppBox className="relative mt-6 !p-4">
         {compiling && <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>}
-        {!compiling && pdfUrl && <iframe title={version.name} src={pdfUrl} className="mx-auto h-[640px] w-full max-w-3xl rounded-md border border-[var(--gh-border-default)] bg-white" />}
-        {!compiling && !pdfUrl && <p className="py-12 text-center text-sm text-[var(--gh-fg-muted)]">PDF preview unavailable.</p>}
-      </GitHubBox>
+        {!compiling && pdfUrl && <iframe title={version.name} src={pdfUrl} className="mx-auto h-[640px] w-full max-w-3xl rounded-md border border-[var(--ui-border-default)] bg-white" />}
+        {!compiling && !pdfUrl && <p className="py-12 text-center text-sm text-[var(--ui-fg-muted)]">PDF preview unavailable.</p>}
+      </AppBox>
     </div>
   );
 }

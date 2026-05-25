@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import GitHubHeader from '../components/github/GitHubHeader';
-import GitHubBox from '../components/github/GitHubBox';
+import AppHeader from '../components/ui/AppHeader';
+import AppBox from '../components/ui/AppBox';
 import Spinner from '../components/ui/Spinner';
-import { ghBtnClass } from '../components/github/GitHubButton';
+import { uiBtnClass } from '../components/ui/AppButton';
 
 export default function SharePost() {
   const { code } = useParams<{ code: string }>();
@@ -27,8 +27,8 @@ export default function SharePost() {
 
   if (loading) {
     return (
-      <div className="gh-page">
-        <GitHubHeader />
+      <div className="ui-page">
+        <AppHeader />
         <div className="flex min-h-[60vh] items-center justify-center"><Spinner className="h-10 w-10" /></div>
       </div>
     );
@@ -36,32 +36,32 @@ export default function SharePost() {
 
   if (error) {
     return (
-      <div className="gh-page">
-        <GitHubHeader />
+      <div className="ui-page">
+        <AppHeader />
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
-          <p className="text-[var(--gh-fg-muted)]">{error}</p>
-          <Link to="/" className="gh-link mt-4 text-sm">Home</Link>
+          <p className="text-[var(--ui-fg-muted)]">{error}</p>
+          <Link to="/" className="ui-link mt-4 text-sm">Home</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="gh-page gh-page-muted">
-      <GitHubHeader
+    <div className="ui-page ui-page-muted">
+      <AppHeader
         right={pdfUrl ? (
-          <a href={pdfUrl} download="resume.pdf" className={`${ghBtnClass('primary')} gh-btn-sm`}>Download PDF</a>
+          <a href={pdfUrl} download="resume.pdf" className={`${uiBtnClass('primary')} ui-btn-sm`}>Download PDF</a>
         ) : null}
       />
-      <main className="gh-container py-6">
-        <GitHubBox className="mb-4">
-          <p className="text-xs font-semibold text-[var(--gh-fg-muted)]">Shared resume</p>
+      <main className="ui-container py-6">
+        <AppBox className="mb-4">
+          <p className="text-xs font-semibold text-[var(--ui-fg-muted)]">Shared resume</p>
           <h1 className="text-lg font-semibold">{name}</h1>
-        </GitHubBox>
+        </AppBox>
         {pdfUrl ? (
-          <iframe title={name} src={pdfUrl} className="h-[calc(100vh-180px)] w-full rounded-md border border-[var(--gh-border-default)] bg-white shadow-sm" />
+          <iframe title={name} src={pdfUrl} className="h-[calc(100vh-180px)] w-full rounded-md border border-[var(--ui-border-default)] bg-white shadow-sm" />
         ) : (
-          <p className="text-center text-[var(--gh-fg-muted)]">PDF unavailable.</p>
+          <p className="text-center text-[var(--ui-fg-muted)]">PDF unavailable.</p>
         )}
       </main>
     </div>

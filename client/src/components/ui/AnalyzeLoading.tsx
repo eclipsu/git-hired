@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import GitHubBox from '../github/GitHubBox';
+import AppBox from './AppBox';
 import Spinner from '../ui/Spinner';
 
 const STEPS = [
@@ -32,9 +32,9 @@ export default function AnalyzeLoading({ active = true }: AnalyzeLoadingProps) {
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
-      <GitHubBox className="w-full max-w-lg">
-        <h2 className="text-base font-semibold">Analyzing your GitHub activity</h2>
-        <p className="mt-1 text-sm text-[var(--gh-fg-muted)]">This usually takes 30–60 seconds.</p>
+      <AppBox className="w-full max-w-lg">
+        <h2 className="text-base font-semibold">Analyzing your repositories</h2>
+        <p className="mt-1 text-sm text-[var(--ui-fg-muted)]">This usually takes 30–60 seconds.</p>
 
         <ul className="mt-6 space-y-3">
           {STEPS.map((label, i) => {
@@ -43,20 +43,20 @@ export default function AnalyzeLoading({ active = true }: AnalyzeLoadingProps) {
             return (
               <li key={label} className="flex items-center gap-3 text-sm">
                 {done ? (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--gh-success-subtle)] text-[var(--gh-success-fg)] text-xs">✓</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ui-success-subtle)] text-[var(--ui-success-fg)] text-xs">✓</span>
                 ) : isActive ? (
                   <Spinner />
                 ) : (
-                  <span className="h-5 w-5 rounded-full border border-[var(--gh-border-default)]" />
+                  <span className="h-5 w-5 rounded-full border border-[var(--ui-border-default)]" />
                 )}
-                <span className={done || isActive ? 'text-[var(--gh-fg-default)]' : 'text-[var(--gh-fg-subtle)]'}>
+                <span className={done || isActive ? 'text-[var(--ui-fg-default)]' : 'text-[var(--ui-fg-subtle)]'}>
                   {label}
                 </span>
               </li>
             );
           })}
         </ul>
-      </GitHubBox>
+      </AppBox>
     </div>
   );
 }

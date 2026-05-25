@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import GitHubBox, { GitHubLabel } from '../components/github/GitHubBox';
-import GitHubButton from '../components/github/GitHubButton';
+import AppBox, { AppLabel } from '../components/ui/AppBox';
+import AppButton from '../components/ui/AppButton';
 import Spinner from '../components/ui/Spinner';
 import { copyToClipboard } from '../utils/clipboard';
 
@@ -35,19 +35,19 @@ export default function DashboardAnalytics() {
   return (
     <div>
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <GitHubBox><p className="text-2xl font-semibold">{totalClicks}</p><p className="text-sm text-[var(--gh-fg-muted)]">Total clicks</p></GitHubBox>
-        <GitHubBox><p className="text-2xl font-semibold">{links.length}</p><p className="text-sm text-[var(--gh-fg-muted)]">Active links</p></GitHubBox>
-        <GitHubBox><p className="text-2xl font-semibold">{links.length ? Math.round(totalClicks / links.length) : 0}</p><p className="text-sm text-[var(--gh-fg-muted)]">Avg per link</p></GitHubBox>
+        <AppBox><p className="text-2xl font-semibold">{totalClicks}</p><p className="text-sm text-[var(--ui-fg-muted)]">Total clicks</p></AppBox>
+        <AppBox><p className="text-2xl font-semibold">{links.length}</p><p className="text-sm text-[var(--ui-fg-muted)]">Active links</p></AppBox>
+        <AppBox><p className="text-2xl font-semibold">{links.length ? Math.round(totalClicks / links.length) : 0}</p><p className="text-sm text-[var(--ui-fg-muted)]">Avg per link</p></AppBox>
       </div>
 
       {links.length === 0 ? (
-        <GitHubBox className="py-12 text-center">
-          <p className="text-[var(--gh-fg-muted)]">No share links yet.</p>
-          <Link to="/app" className="gh-link mt-2 inline-block text-sm">Go to resume builder →</Link>
-        </GitHubBox>
+        <AppBox className="py-12 text-center">
+          <p className="text-[var(--ui-fg-muted)]">No share links yet.</p>
+          <Link to="/app" className="ui-link mt-2 inline-block text-sm">Go to resume builder →</Link>
+        </AppBox>
       ) : (
-        <GitHubBox className="!p-0 overflow-hidden">
-          <table className="gh-table">
+        <AppBox className="!p-0 overflow-hidden">
+          <table className="ui-table">
             <thead>
               <tr>
                 <th>Version</th>
@@ -61,23 +61,23 @@ export default function DashboardAnalytics() {
               {links.map((l) => (
                 <tr key={l.id}>
                   <td className="font-medium">{l.versionName}</td>
-                  <td className="font-mono text-xs text-[var(--gh-fg-muted)]">/post/{l.code}</td>
-                  <td><GitHubLabel>{l.clickCount}</GitHubLabel></td>
-                  <td className="text-[var(--gh-fg-muted)]">{new Date(l.createdAt).toLocaleDateString()}</td>
+                  <td className="font-mono text-xs text-[var(--ui-fg-muted)]">/post/{l.code}</td>
+                  <td><AppLabel>{l.clickCount}</AppLabel></td>
+                  <td className="text-[var(--ui-fg-muted)]">{new Date(l.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <GitHubButton variant="default" className="gh-btn-sm" onClick={async () => {
+                    <AppButton variant="default" className="ui-btn-sm" onClick={async () => {
                       await copyToClipboard(`${window.location.origin}/post/${l.code}`);
                       setCopied(l.code);
                       setTimeout(() => setCopied(null), 2000);
                     }}>
                       {copied === l.code ? 'Copied' : 'Copy'}
-                    </GitHubButton>
+                    </AppButton>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </GitHubBox>
+        </AppBox>
       )}
     </div>
   );

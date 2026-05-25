@@ -1,5 +1,5 @@
-import GitHubBox, { GitHubLabel } from '../github/GitHubBox';
-import GitHubButton from '../github/GitHubButton';
+import AppBox, { AppLabel } from '../ui/AppBox';
+import AppButton from '../ui/AppButton';
 import Spinner from '../ui/Spinner';
 import { computeAtsMatch } from '../../utils/atsMatch';
 import type { BulletItem } from '../../hooks/useAppState';
@@ -51,41 +51,41 @@ export default function StepTailor({
   const skills = extractSkills(jobDescription);
 
   return (
-    <div className="gh-container-wide py-6">
+    <div className="ui-container-wide py-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        <GitHubBox>
-          <label className="gh-form-label" htmlFor="jd">Job description</label>
+        <AppBox>
+          <label className="ui-form-label" htmlFor="jd">Job description</label>
           <textarea
             id="jd"
             value={jobDescription}
             onChange={(e) => onJobDescriptionChange(e.target.value)}
             placeholder="Paste the full job description…"
-            className="gh-textarea mt-2 h-72"
+            className="ui-textarea mt-2 h-72"
           />
           {skills.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-semibold text-[var(--gh-fg-muted)]">Detected skills</p>
+              <p className="text-xs font-semibold text-[var(--ui-fg-muted)]">Detected skills</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {skills.map((s) => <GitHubLabel key={s} variant="accent">{s}</GitHubLabel>)}
+                {skills.map((s) => <AppLabel key={s} variant="accent">{s}</AppLabel>)}
               </div>
             </div>
           )}
           {jobDescription.trim() && (
-            <p className="mt-3 text-xs text-[var(--gh-fg-muted)]">~{matchPercent}% keyword overlap with your bullets</p>
+            <p className="mt-3 text-xs text-[var(--ui-fg-muted)]">~{matchPercent}% keyword overlap with your bullets</p>
           )}
-        </GitHubBox>
+        </AppBox>
 
         <div>
           {jobDescription.trim() && (
-            <GitHubLabel variant="success">Tailored for {jobTitle(jobDescription)}</GitHubLabel>
+            <AppLabel variant="success">Tailored for {jobTitle(jobDescription)}</AppLabel>
           )}
           <h3 className="mt-4 text-base font-semibold">Preview</h3>
-          <div className="mt-3 max-h-[560px] overflow-y-auto rounded-md border border-[var(--gh-border-default)]">
+          <div className="mt-3 max-h-[560px] overflow-y-auto rounded-md border border-[var(--ui-border-default)]">
             <ResumePreview contactInfo={contactInfo} bullets={bullets} />
           </div>
-          <GitHubButton variant="primary" className="mt-4 w-full" disabled={generating} onClick={onGenerate}>
+          <AppButton variant="primary" className="mt-4 w-full" disabled={generating} onClick={onGenerate}>
             {generating ? <><Spinner /> Generating…</> : 'Generate tailored resume'}
-          </GitHubButton>
+          </AppButton>
         </div>
       </div>
     </div>

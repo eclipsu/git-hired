@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import GitHubBox from '../github/GitHubBox';
-import GitHubButton from '../github/GitHubButton';
+import AppBox from '../ui/AppBox';
+import AppButton from '../ui/AppButton';
 import ContactChat from './ContactChat';
 import ResumePreview from '../resume/ResumePreview';
 import Spinner from '../ui/Spinner';
@@ -47,31 +47,31 @@ export default function StepEnrich({
   const canContinue = Boolean(parsedResume) && contactComplete;
 
   return (
-    <div className="gh-container-wide py-6">
+    <div className="ui-container-wide py-6">
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4">
-          <GitHubBox>
+          <AppBox>
             <h3 className="text-sm font-semibold">Upload resume</h3>
-            <p className="mt-1 text-xs text-[var(--gh-fg-muted)]">Extract contact info from PDF or DOCX.</p>
+            <p className="mt-1 text-xs text-[var(--ui-fg-muted)]">Extract contact info from PDF or DOCX.</p>
             <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelect(f); }} />
             {parsedResume ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                 {(parsing || extractingProfile) && <Spinner />}
                 <span className="font-medium">{parsedResume.filename}</span>
-                {!parsing && !extractingProfile && <span className="text-[var(--gh-success-fg)]">✓</span>}
-                <button type="button" disabled={parsing || extractingProfile} onClick={() => fileRef.current?.click()} className="gh-link cursor-pointer text-xs disabled:opacity-50">Replace</button>
+                {!parsing && !extractingProfile && <span className="text-[var(--ui-success-fg)]">✓</span>}
+                <button type="button" disabled={parsing || extractingProfile} onClick={() => fileRef.current?.click()} className="ui-link cursor-pointer text-xs disabled:opacity-50">Replace</button>
               </div>
             ) : (
               <button
                 type="button"
                 disabled={parsing}
                 onClick={() => fileRef.current?.click()}
-                className="mt-3 flex w-full cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)] py-8 text-sm text-[var(--gh-fg-muted)] hover:border-[var(--gh-accent-emphasis)]"
+                className="mt-3 flex w-full cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] py-8 text-sm text-[var(--ui-fg-muted)] hover:border-[var(--ui-accent-emphasis)]"
               >
                 {parsing ? <><Spinner /><span>Parsing…</span></> : 'Drop PDF or DOCX'}
               </button>
             )}
-          </GitHubBox>
+          </AppBox>
 
           {parsedResume && (
             <ContactChat
@@ -84,30 +84,30 @@ export default function StepEnrich({
             />
           )}
 
-          <GitHubBox>
+          <AppBox>
             <h3 className="text-sm font-semibold">Additional notes</h3>
-            <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)} placeholder="Internships, freelance, etc." className="gh-textarea mt-3 h-28" />
-          </GitHubBox>
+            <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)} placeholder="Internships, freelance, etc." className="ui-textarea mt-3 h-28" />
+          </AppBox>
         </aside>
 
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold">Preview</h2>
-            <span className="text-xs text-[var(--gh-fg-muted)]">{bullets.filter((b) => b.included).length} bullets</span>
+            <span className="text-xs text-[var(--ui-fg-muted)]">{bullets.filter((b) => b.included).length} bullets</span>
           </div>
-          <div className="overflow-hidden rounded-md border border-[var(--gh-border-default)]">
+          <div className="overflow-hidden rounded-md border border-[var(--ui-border-default)]">
             <ResumePreview contactInfo={contactInfo} bullets={bullets} />
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             {parsedResume && !contactComplete && (
-              <p className="text-sm text-[var(--gh-fg-muted)]">
+              <p className="text-sm text-[var(--ui-fg-muted)]">
                 Missing: {missingContactFields(contactInfo).map((f) => CONTACT_FIELD_LABELS[f]).join(', ')}
               </p>
             )}
-            {!parsedResume && <p className="text-sm text-[var(--gh-fg-muted)]">Upload a resume or skip to tailor.</p>}
+            {!parsedResume && <p className="text-sm text-[var(--ui-fg-muted)]">Upload a resume or skip to tailor.</p>}
             <div className="ml-auto flex gap-2">
-              {!parsedResume && <GitHubButton variant="default" onClick={onSkip}>Skip to tailor</GitHubButton>}
-              <GitHubButton variant="primary" disabled={!canContinue} onClick={onContinue}>Continue</GitHubButton>
+              {!parsedResume && <AppButton variant="default" onClick={onSkip}>Skip to tailor</AppButton>}
+              <AppButton variant="primary" disabled={!canContinue} onClick={onContinue}>Continue</AppButton>
             </div>
           </div>
         </div>

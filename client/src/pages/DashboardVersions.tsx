@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import GitHubBox, { GitHubLabel } from '../components/github/GitHubBox';
+import AppBox, { AppLabel } from '../components/ui/AppBox';
 import Spinner from '../components/ui/Spinner';
-import { ghBtnClass } from '../components/github/GitHubButton';
+import { uiBtnClass } from '../components/ui/AppButton';
 
 interface ResumeVersion {
   id: string;
@@ -30,27 +30,27 @@ export default function DashboardVersions() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold">Saved versions</h2>
-        <Link to="/app" className={ghBtnClass('primary') + ' gh-btn-sm'}>New resume</Link>
+        <Link to="/app" className={uiBtnClass('primary') + ' ui-btn-sm'}>New resume</Link>
       </div>
 
       {versions.length === 0 ? (
-        <GitHubBox className="py-12 text-center">
-          <p className="text-[var(--gh-fg-muted)]">No saved versions yet.</p>
-          <Link to="/app" className="gh-link mt-2 inline-block text-sm">Create one →</Link>
-        </GitHubBox>
+        <AppBox className="py-12 text-center">
+          <p className="text-[var(--ui-fg-muted)]">No saved versions yet.</p>
+          <Link to="/app" className="ui-link mt-2 inline-block text-sm">Create one →</Link>
+        </AppBox>
       ) : (
         <ul className="space-y-2">
           {versions.map((v) => (
-            <li key={v.id} className="gh-box-row items-center !py-3">
+            <li key={v.id} className="ui-box-row items-center !py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{v.name}</p>
-                <p className="text-xs text-[var(--gh-fg-muted)]">
+                <p className="text-xs text-[var(--ui-fg-muted)]">
                   {new Date(v.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {v.shareLinks?.[0] && <GitHubLabel>{v.shareLinks[0].clickCount} clicks</GitHubLabel>}
-                <Link to={`/dashboard/versions/${v.id}`} className={ghBtnClass('default') + ' gh-btn-sm'}>View</Link>
+                {v.shareLinks?.[0] && <AppLabel>{v.shareLinks[0].clickCount} clicks</AppLabel>}
+                <Link to={`/dashboard/versions/${v.id}`} className={uiBtnClass('default') + ' ui-btn-sm'}>View</Link>
               </div>
             </li>
           ))}

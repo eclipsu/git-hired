@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import GitHubBox from '../github/GitHubBox';
-import { GitHubFlash, GitHubLabel } from '../github/GitHubBox';
-import GitHubButton from '../github/GitHubButton';
+import AppBox from '../ui/AppBox';
+import { AppFlash, AppLabel } from '../ui/AppBox';
+import AppButton from '../ui/AppButton';
 import { copyToClipboard } from '../../utils/clipboard';
 import { useCopyFeedback } from '../../hooks/useCopyFeedback';
 import LatexEditor from './LatexEditor';
@@ -125,76 +125,76 @@ export default function StepExport({
   };
 
   return (
-    <div className="gh-container-wide py-6">
+    <div className="ui-container-wide py-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={onRetailer} className="gh-link cursor-pointer text-sm">← Re-tailor</button>
-        <GitHubLabel variant="accent">ATS {atsMatchPercent}%</GitHubLabel>
-        <Link to="/dashboard" className="gh-btn gh-btn-default gh-btn-sm ml-auto">Dashboard</Link>
+        <button type="button" onClick={onRetailer} className="ui-link cursor-pointer text-sm">← Re-tailor</button>
+        <AppLabel variant="accent">ATS {atsMatchPercent}%</AppLabel>
+        <Link to="/dashboard" className="ui-btn ui-btn-default ui-btn-sm ml-auto">Dashboard</Link>
       </div>
 
       <h2 className="text-base font-semibold">LaTeX editor & PDF</h2>
-      <p className="mt-1 text-sm text-[var(--gh-fg-muted)]">Edit source, compile, and download.</p>
+      <p className="mt-1 text-sm text-[var(--ui-fg-muted)]">Edit source, compile, and download.</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <GitHubButton variant="primary" disabled={compiling} onClick={() => runCompile(editorTex)}>
+        <AppButton variant="primary" disabled={compiling} onClick={() => runCompile(editorTex)}>
           {compiling ? <><Spinner /> Compiling…</> : 'Compile PDF'}
-        </GitHubButton>
-        <GitHubButton variant="default" onClick={() => { onResetTex(); setEditorTex(originalTex); }}>Reset</GitHubButton>
-        <GitHubButton variant="default" onClick={async () => { await copyToClipboard(editorTex); markCopied('latex'); }}>
+        </AppButton>
+        <AppButton variant="default" onClick={() => { onResetTex(); setEditorTex(originalTex); }}>Reset</AppButton>
+        <AppButton variant="default" onClick={async () => { await copyToClipboard(editorTex); markCopied('latex'); }}>
           {copiedId === 'latex' ? 'Copied' : 'Copy LaTeX'}
-        </GitHubButton>
-        <GitHubButton variant="primary" disabled={!pdfUrl} onClick={() => { if (pdfUrl) { const a = document.createElement('a'); a.href = pdfUrl; a.download = 'resume.pdf'; a.click(); } }}>
+        </AppButton>
+        <AppButton variant="primary" disabled={!pdfUrl} onClick={() => { if (pdfUrl) { const a = document.createElement('a'); a.href = pdfUrl; a.download = 'resume.pdf'; a.click(); } }}>
           Download PDF
-        </GitHubButton>
+        </AppButton>
       </div>
 
       <div className="mt-4 grid min-h-[70vh] gap-4 lg:grid-cols-2">
-        <div className="flex min-h-[420px] flex-col rounded-md border border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)] p-2 lg:min-h-0">
-          <p className="px-2 py-1 text-xs font-medium text-[var(--gh-fg-muted)]">LaTeX source</p>
+        <div className="flex min-h-[420px] flex-col rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-2 lg:min-h-0">
+          <p className="px-2 py-1 text-xs font-medium text-[var(--ui-fg-muted)]">LaTeX source</p>
           <div className="min-h-[380px] flex-1 lg:min-h-0">
             <LatexEditor value={editorTex} onChange={(v) => { setEditorTex(v); onTexChange(v); }} />
           </div>
         </div>
-        <div className="relative flex min-h-[420px] flex-col rounded-md border border-[var(--gh-border-default)] bg-[var(--gh-canvas-subtle)] p-4">
-          <p className="mb-2 text-xs font-medium text-[var(--gh-fg-muted)]">PDF preview</p>
+        <div className="relative flex min-h-[420px] flex-col rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] p-4">
+          <p className="mb-2 text-xs font-medium text-[var(--ui-fg-muted)]">PDF preview</p>
           {compiling && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-[var(--gh-canvas-subtle)]/90">
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-[var(--ui-canvas-subtle)]/90">
               <Spinner className="h-8 w-8" />
             </div>
           )}
           {pdfUrl ? (
             <iframe title="PDF preview" src={pdfUrl} className="min-h-[380px] flex-1 rounded-md bg-white" />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-[var(--gh-fg-muted)]">Compile to preview</div>
+            <div className="flex flex-1 items-center justify-center text-sm text-[var(--ui-fg-muted)]">Compile to preview</div>
           )}
         </div>
       </div>
 
-      {compileError && <GitHubFlash variant="error">{compileError}</GitHubFlash>}
+      {compileError && <AppFlash variant="error">{compileError}</AppFlash>}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <GitHubBox className="text-center">
+        <AppBox className="text-center">
           <p className="text-sm font-semibold">Copy bullets</p>
-          <GitHubButton variant="default" className="mt-3 w-full" onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }}>
+          <AppButton variant="default" className="mt-3 w-full" onClick={async () => { await copyToClipboard(plainTextResume); markCopied('bullets'); }}>
             {copiedId === 'bullets' ? 'Copied' : 'Copy'}
-          </GitHubButton>
-        </GitHubBox>
-        <GitHubBox className="text-center">
+          </AppButton>
+        </AppBox>
+        <AppBox className="text-center">
           <p className="text-sm font-semibold">Share link</p>
-          <GitHubButton variant="default" className="mt-3 w-full" disabled={sharing || saving} onClick={getShareLink}>
+          <AppButton variant="default" className="mt-3 w-full" disabled={sharing || saving} onClick={getShareLink}>
             {sharing ? 'Creating…' : 'Get link'}
-          </GitHubButton>
-        </GitHubBox>
-        <GitHubBox>
+          </AppButton>
+        </AppBox>
+        <AppBox>
           <p className="text-sm font-semibold">Save version</p>
-          <input type="text" value={versionName} onChange={(e) => setVersionName(e.target.value)} className="gh-input mt-2" />
-          <GitHubButton variant="primary" className="mt-3 w-full" disabled={saving || !versionName.trim()} onClick={saveVersion}>
+          <input type="text" value={versionName} onChange={(e) => setVersionName(e.target.value)} className="ui-input mt-2" />
+          <AppButton variant="primary" className="mt-3 w-full" disabled={saving || !versionName.trim()} onClick={saveVersion}>
             {saving ? 'Saving…' : 'Save'}
-          </GitHubButton>
-        </GitHubBox>
+          </AppButton>
+        </AppBox>
       </div>
 
-      {shareUrl && <p className="mt-4 text-center font-mono text-xs text-[var(--gh-fg-muted)]">{copiedId === 'share' ? 'Link copied!' : shareUrl}</p>}
+      {shareUrl && <p className="mt-4 text-center font-mono text-xs text-[var(--ui-fg-muted)]">{copiedId === 'share' ? 'Link copied!' : shareUrl}</p>}
     </div>
   );
 }

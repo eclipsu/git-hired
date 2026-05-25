@@ -1,33 +1,33 @@
 import { Link } from 'react-router-dom';
-import GitHubHeader from '../components/github/GitHubHeader';
-import GitHubBox from '../components/github/GitHubBox';
-import GitHubMark from '../components/github/GitHubMark';
-import { ghBtnClass } from '../components/github/GitHubButton';
+import AppHeader from '../components/ui/AppHeader';
+import AppBox from '../components/ui/AppBox';
+import { AppIcon } from '../components/ui/AppLogo';
+import { uiBtnClass } from '../components/ui/AppButton';
 
 export default function Connect() {
   return (
-    <div className="gh-page gh-page-muted">
-      <GitHubHeader right={<Link to="/" className="gh-link text-sm text-white/80 hover:text-white">Home</Link>} />
+    <div className="ui-page ui-page-muted">
+      <AppHeader right={<Link to="/" className="ui-link text-sm text-white/80 hover:text-white">Home</Link>} />
 
       <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-12">
-        <GitHubBox className="w-full max-w-[340px] text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gh-header-bg)] text-white">
-            <GitHubMark size={28} />
+        <AppBox className="w-full max-w-[340px] text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--ui-header-bg)] text-white">
+            <AppIcon size={28} />
           </div>
           <h1 className="mt-4 text-xl font-semibold">Sign in to GitHired</h1>
-          <p className="mt-2 text-sm text-[var(--gh-fg-muted)]">
+          <p className="mt-2 text-sm text-[var(--ui-fg-muted)]">
             We'll analyze your repositories to build your resume. Read-only access.
           </p>
-          <a href="/auth/github" className={`${ghBtnClass('primary')} mt-6 w-full`}>
+          <a href="/auth/github" className={`${uiBtnClass('primary')} mt-6 w-full`}>
             Continue with GitHub
           </a>
-          <p className="mt-4 text-xs text-[var(--gh-fg-subtle)]">
+          <p className="mt-4 text-xs text-[var(--ui-fg-subtle)]">
             We never post or modify your GitHub account.
           </p>
-          <Link to="/" className="gh-link mt-6 inline-block text-sm">
+          <Link to="/" className="ui-link mt-6 inline-block text-sm">
             ← Back to home
           </Link>
-        </GitHubBox>
+        </AppBox>
       </div>
     </div>
   );

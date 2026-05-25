@@ -7,7 +7,7 @@ import {
   LogOut,
   Sparkles,
 } from 'lucide-react';
-import GitHubHeader from '../github/GitHubHeader';
+import AppHeader from '../ui/AppHeader';
 
 interface UserProfile {
   username: string;
@@ -49,52 +49,52 @@ export default function DashboardLayout() {
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'Dashboard';
 
   return (
-    <div className="gh-page">
-      <GitHubHeader
+    <div className="ui-page">
+      <AppHeader
         right={
           user ? (
-            <img src={user.avatarUrl} alt="" className="gh-avatar" />
+            <img src={user.avatarUrl} alt="" className="ui-avatar" />
           ) : null
         }
       />
 
-      <div className="gh-layout">
-        <aside className="gh-sidebar hidden md:block">
+      <div className="ui-layout">
+        <aside className="ui-sidebar hidden md:block">
           {user && (
             <div className="mb-4 flex items-center gap-3 px-3">
-              <img src={user.avatarUrl} alt="" className="gh-avatar" />
+              <img src={user.avatarUrl} alt="" className="ui-avatar" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{user.username}</p>
-                <p className="text-xs text-[var(--gh-fg-muted)]">Your account</p>
+                <p className="text-xs text-[var(--ui-fg-muted)]">Your account</p>
               </div>
             </div>
           )}
-          <nav className="gh-sidebar-nav">
+          <nav className="ui-sidebar-nav">
             {SIDEBAR.map((item) => (
               <NavLink
                 key={item.to + item.label}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `gh-sidebar-item${isActive ? ' gh-sidebar-item-active' : ''}`
+                  `ui-sidebar-item${isActive ? ' ui-sidebar-item-active' : ''}`
                 }
               >
-                <item.icon className="h-4 w-4 shrink-0 text-[var(--gh-fg-muted)]" />
+                <item.icon className="h-4 w-4 shrink-0 text-[var(--ui-fg-muted)]" />
                 {item.label}
               </NavLink>
             ))}
           </nav>
-          <a href="/auth/logout" className="gh-sidebar-item mt-4 text-[var(--gh-fg-muted)]">
+          <a href="/auth/logout" className="ui-sidebar-item mt-4 text-[var(--ui-fg-muted)]">
             <LogOut className="h-4 w-4" />
             Sign out
           </a>
         </aside>
 
-        <main className="gh-main">
-          <div className="gh-page-header">
-            <h1 className="gh-page-title">{pageTitle}</h1>
+        <main className="ui-main">
+          <div className="ui-page-header">
+            <h1 className="ui-page-title">{pageTitle}</h1>
             {user && (
-              <p className="gh-page-desc">
+              <p className="ui-page-desc">
                 Signed in as <strong>{user.username}</strong>
               </p>
             )}
@@ -103,14 +103,14 @@ export default function DashboardLayout() {
         </main>
       </div>
 
-      <nav className="gh-mobile-nav md:hidden">
+      <nav className="ui-mobile-nav md:hidden">
         {SIDEBAR.map((item) => (
           <NavLink
             key={item.to + item.label}
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `gh-btn gh-btn-sm ${isActive ? 'gh-btn-default' : 'gh-btn-invisible'}`
+              `ui-btn ui-btn-sm ${isActive ? 'ui-btn-default' : 'ui-btn-invisible'}`
             }
           >
             {item.label}

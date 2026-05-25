@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import GitHubBox, { GitHubBoxHeader } from '../github/GitHubBox';
-import GitHubButton from '../github/GitHubButton';
+import AppBox, { AppBoxHeader } from '../ui/AppBox';
+import AppButton from '../ui/AppButton';
 import type { BulletItem, ProjectMeta } from '../../hooks/useAppState';
 
 interface StepBulletsProps {
@@ -65,10 +65,10 @@ export default function StepBullets({
   };
 
   return (
-    <div className="gh-container py-6">
-      <div className="gh-page-header !border-0 !pb-4">
-        <h2 className="gh-page-title !text-xl">Review bullets</h2>
-        <p className="gh-page-desc">Edit bullets and add project context before tailoring.</p>
+    <div className="ui-container py-6">
+      <div className="ui-page-header !border-0 !pb-4">
+        <h2 className="ui-page-title !text-xl">Review bullets</h2>
+        <p className="ui-page-desc">Edit bullets and add project context before tailoring.</p>
       </div>
 
       <div className="space-y-4">
@@ -78,31 +78,31 @@ export default function StepBullets({
           const showReadme = expandedReadme[repo] ?? false;
 
           return (
-            <GitHubBox key={repo}>
-              <GitHubBoxHeader
+            <AppBox key={repo}>
+              <AppBoxHeader
                 title={displayName}
                 action={
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[var(--gh-fg-muted)]">Bullets</span>
-                    <GitHubButton variant="default" className="gh-btn-sm !px-2" disabled={items.length <= 1} onClick={() => setRepoCount(repo, displayName, items.length - 1)}>−</GitHubButton>
+                    <span className="text-[var(--ui-fg-muted)]">Bullets</span>
+                    <AppButton variant="default" className="ui-btn-sm !px-2" disabled={items.length <= 1} onClick={() => setRepoCount(repo, displayName, items.length - 1)}>−</AppButton>
                     <input
                       type="number"
                       min={1}
                       max={6}
                       value={items.length}
                       onChange={(e) => setRepoCount(repo, displayName, Number(e.target.value) || 1)}
-                      className="gh-input w-12 !py-1 text-center text-sm"
+                      className="ui-input w-12 !py-1 text-center text-sm"
                     />
-                    <GitHubButton variant="default" className="gh-btn-sm !px-2" disabled={items.length >= 6} onClick={() => setRepoCount(repo, displayName, items.length + 1)}>+</GitHubButton>
+                    <AppButton variant="default" className="ui-btn-sm !px-2" disabled={items.length >= 6} onClick={() => setRepoCount(repo, displayName, items.length + 1)}>+</AppButton>
                   </div>
                 }
               />
-              <p className="mb-3 text-xs text-[var(--gh-fg-muted)]">{repo}</p>
+              <p className="mb-3 text-xs text-[var(--ui-fg-muted)]">{repo}</p>
               {meta?.description && <p className="mb-3 text-sm">{meta.description}</p>}
 
               {readme && (
-                <div className="mb-4 rounded-md border border-[var(--gh-border-muted)] bg-[var(--gh-canvas-subtle)] p-3">
-                  <button type="button" onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-semibold text-[var(--gh-fg-muted)]">
+                <div className="mb-4 rounded-md border border-[var(--ui-border-muted)] bg-[var(--ui-canvas-subtle)] p-3">
+                  <button type="button" onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-semibold text-[var(--ui-fg-muted)]">
                     README excerpt
                     <span>{showReadme ? '▲' : '▼'}</span>
                   </button>
@@ -111,42 +111,42 @@ export default function StepBullets({
               )}
 
               <label className="block">
-                <span className="gh-form-label !text-xs">What does this project do?</span>
+                <span className="ui-form-label !text-xs">What does this project do?</span>
                 <textarea
                   value={projectNotes[repo] ?? ''}
                   onChange={(e) => onProjectNotesChange(repo, e.target.value)}
                   rows={3}
                   placeholder="Brief description for the tailor step…"
-                  className="gh-textarea mt-1"
+                  className="ui-textarea mt-1"
                 />
               </label>
 
               <ul className="mt-4 space-y-3">
                 {items.map((b, idx) => (
                   <li key={b.id} className="flex gap-3">
-                    <span className="mt-2.5 w-5 shrink-0 text-center text-xs text-[var(--gh-fg-subtle)]">{idx + 1}</span>
-                    <input type="checkbox" checked={b.included} onChange={() => updateBullet(b.id, { included: !b.included })} className="gh-checkbox mt-2.5" />
+                    <span className="mt-2.5 w-5 shrink-0 text-center text-xs text-[var(--ui-fg-subtle)]">{idx + 1}</span>
+                    <input type="checkbox" checked={b.included} onChange={() => updateBullet(b.id, { included: !b.included })} className="ui-checkbox mt-2.5" />
                     <textarea
                       value={b.text}
                       onChange={(e) => updateBullet(b.id, { text: e.target.value })}
                       rows={2}
                       placeholder="Bullet point…"
-                      className="gh-textarea min-h-[4rem] flex-1"
+                      className="ui-textarea min-h-[4rem] flex-1"
                     />
-                    <GitHubButton variant="danger" className="gh-btn-sm !px-2" disabled={items.length <= 1} onClick={() => removeBullet(b.id)} aria-label="Delete">×</GitHubButton>
+                    <AppButton variant="danger" className="ui-btn-sm !px-2" disabled={items.length <= 1} onClick={() => removeBullet(b.id)} aria-label="Delete">×</AppButton>
                   </li>
                 ))}
               </ul>
-            </GitHubBox>
+            </AppBox>
           );
         })}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--gh-border-muted)] pt-4">
-        <p className="text-sm text-[var(--gh-fg-muted)]">{includedCount} bullets · 1 page target</p>
-        <GitHubButton variant="primary" disabled={includedCount === 0} onClick={() => onContinue(bullets, projectNotes)}>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--ui-border-muted)] pt-4">
+        <p className="text-sm text-[var(--ui-fg-muted)]">{includedCount} bullets · 1 page target</p>
+        <AppButton variant="primary" disabled={includedCount === 0} onClick={() => onContinue(bullets, projectNotes)}>
           Continue
-        </GitHubButton>
+        </AppButton>
       </div>
     </div>
   );
