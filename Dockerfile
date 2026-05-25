@@ -8,9 +8,10 @@ RUN apt-get update \
     make \
     g++ \
     texlive-latex-recommended \
+    texlive-latex-extra \
     texlive-fonts-recommended \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
-# Avoid texlive-latex-extra / texlive-fonts-extra — too large for small EC2 disks.
+# latex-extra: titlesec, enumitem, etc. Do NOT add texlive-fonts-extra (~500MB).
 
 WORKDIR /app
 
