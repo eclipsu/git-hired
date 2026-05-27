@@ -1,90 +1,77 @@
 import { useEffect, useState } from 'react';
-import AppBox from './AppBox';
-import Spinner from './Spinner';
+import { Check, Loader2, Terminal } from 'lucide-react';
 
 const STEPS = [
   'Fetching repositories',
   'Analyzing commits',
-  'Identifying key contributions',
-  'Extracting technologies',
-  'Generating resume bullets',
-  'Optimizing for impact',
+  'Reading pull requests',
+  'Generating bullet points',
+  'Optimizing for ATS keywords',
+  'Done.',
 ];
-
-const STEP_MS = 4500;
-const LAST_STEP_INDEX = STEPS.length - 1;
 
 interface AnalyzeLoadingProps {
   active?: boolean;
+  repoNames?: string[];
 }
 
-export default function AnalyzeLoading({ active = true }: AnalyzeLoadingProps) {
-  const [completedStep, setCompletedStep] = useState(0);
-  const [elapsedSec, setElapsedSec] = useState(0);
-  const [allDone, setAllDone] = useState(false);
+export default function AnalyzeLoading({ active = true, repoNames = [] }: AnalyzeLoadingProps) {
+  const [steps, setSteps] = useState<{ text: string; done: boolean }[]>([]);
 
   useEffect(() => {
-    if (!active) {
-      setAllDone(true);
-      return undefined;
-    }
+    if (!active) return;
 
-    setCompletedStep(0);
-    setAllDone(false);
-    setElapsedSec(0);
+    const log = STEPS.map((text, i) => {
+      if (i === 0 && repoNames.length > 0) {
+        return `Fetching commits from ${repoNames[0]}...`;
+      }
+      if (i === 1 && repoNames.length > 1) {
+        return `Reading PRs from ${repoNames[1]}...`;
+      }
+      if (i === 2 && repoNames.length > 2) {
+        return `Scanning ${repoNames[2]} activity...`;
+      }
+      return text;
+    });
+
+    setSteps(log.map((text) => ({ text, done: false })));
 
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 0; i < LAST_STEP_INDEX; i += 1) {
+    log.forEach((_, i) => {
       timers.push(
-        setTimeout(() => setCompletedStep(i + 1), (i + 1) * STEP_MS),
+        setTimeout(() => {
+          setSteps((s) => s.map((step, si) => (si <= i ? { ...step, done: true } : step)));
+        }, 800 * (i + 1)),
       );
-    }
+    });
 
-    const elapsedId = setInterval(() => {
-      setElapsedSec((s) => s + 1);
-    }, 1000);
-
-    return () => {
-      timers.forEach(clearTimeout);
-      clearInterval(elapsedId);
-    };
-  }, [active]);
-
-  const visibleCompleted = allDone ? STEPS.length : completedStep;
+    return () => timers.forEach(clearTimeout);
+  }, [active, repoNames]);
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
-      <AppBox className="w-full max-w-lg">
-        <h2 className="text-base font-semibold">Analyzing your repositories</h2>
-        <p className="mt-1 text-sm text-[var(--ui-fg-muted)]">
-          This usually takes 30–90 seconds.
-          {elapsedSec >= 10 && (
-            <span className="block mt-1 text-xs">{elapsedSec}s elapsed…</span>
-          )}
-        </p>
-
-        <ul className="mt-6 space-y-3">
-          {STEPS.map((label, i) => {
-            const isLast = i === LAST_STEP_INDEX;
-            const done = !isLast ? visibleCompleted > i : allDone;
-            const isActive = !done && (isLast ? active : visibleCompleted === i);
-            return (
-              <li key={label} className="flex items-center gap-3 text-sm">
-                {done ? (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ui-success-subtle)] text-[var(--ui-success-fg)] text-xs">✓</span>
-                ) : isActive ? (
-                  <Spinner />
-                ) : (
-                  <span className="h-5 w-5 rounded-full border border-[var(--ui-border-default)]" />
-                )}
-                <span className={done || isActive ? 'text-[var(--ui-fg-default)]' : 'text-[var(--ui-fg-subtle)]'}>
-                  {label}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </AppBox>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="w-full max-w-lg rounded border border-border bg-card p-6 mx-4">
+        <div className="flex items-center gap-3 mb-5">
+          <Terminal size={16} className="text-primary" />
+          <span className="font-mono font-semibold text-sm text-foreground">
+            Analyzing repositories
+          </span>
+        </div>
+        <div className="space-y-2.5">
+          {steps.map((step, i) => (
+            <div key={i} className="flex items-center gap-3 font-mono text-sm">
+              {step.done ? (
+                <Check size={14} className="text-success flex-shrink-0" />
+              ) : (
+                <Loader2 size={14} className="text-muted-foreground animate-spin flex-shrink-0" />
+              )}
+              <span className={step.done ? 'text-foreground/80' : 'text-foreground'}>
+                {step.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

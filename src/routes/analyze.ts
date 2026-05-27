@@ -137,6 +137,8 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       session.repoAnalysisCache = {};
     }
 
+    session.analyzeCompletedAt = null;
+
     await refreshRepoFingerprints(session, user, repos.map((r) => r.name));
 
     const rawBullets: Record<string, string[]> = {};
@@ -206,6 +208,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
 
     session.selectedRepos = repos.map((r) => r.name);
     session.rawBullets = rawBullets;
+    session.analyzeCompletedAt = new Date();
     await AppDataSource.getRepository(ResumeSession).save(session);
 
     console.log(

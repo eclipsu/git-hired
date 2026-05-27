@@ -15,6 +15,8 @@ import { formatProjectDateRange } from '../lib/github';
 import { aggregateRepoSkills } from '../lib/repoCache';
 import { getOrCreateResumeSession } from '../lib/sessions';
 import { fitResumeToOnePage } from '../lib/resumeFit';
+import { computeAtsMatch, computePassedAts, tailoredResumeToText } from '../lib/atsMatch';
+import { recordGeneration } from '../lib/platformStats';
 
 const router = Router();
 
@@ -129,6 +131,26 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     session.tailoredResume = tailored;
     session.generatedTex = generatedTex;
     await AppDataSource.getRepository(ResumeSession).save(session);
+
+    const jd = jobDescription ?? session.jobDescription ?? '';
+    const hasJobDescription = Boolean(jd.trim());
+    const atsMatchPercent = hasJobDescription
+      ? computeAtsMatch(jd, tailoredResumeToText(tailored))
+      : 0;
+    const passedAts = computePassedAts(fit.pageCount, hasJobDescription, atsMatchPercent);
+    const durationMs = session.analyzeCompletedAt
+      ? Date.now() - session.analyzeCompletedAt.getTime()
+      : null;
+
+    await recordGeneration({
+      user,
+      durationMs,
+      pageCount: fit.pageCount,
+      fitIterations: fit.fitIterations,
+      hasJobDescription,
+      atsMatchPercent,
+      passedAts,
+    });
 
     console.log('[tailor] Resume generated for', user.username, `(${fit.pageCount} page(s), ${fit.fitIterations} fit pass(es))`);
 

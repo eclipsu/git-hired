@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 import AnalyzeLoading from '../components/ui/AnalyzeLoading';
-import AppBackground from '../components/app/AppBackground';
-import AppNav from '../components/app/AppNav';
 import StepAnalyze from '../components/app/StepAnalyze';
 import StepEnrich from '../components/app/StepEnrich';
 import StepBullets from '../components/app/StepBullets';
 import StepTailor from '../components/app/StepTailor';
 import StepExport from '../components/app/StepExport';
 import {
-  STEP_ORDER,
   useAppState,
-  type AppStep,
   type BulletItem,
   type RepoItem,
   type ProjectMeta,
@@ -20,10 +17,6 @@ import { useContactChat } from '../hooks/useContactChat';
 import { computeAtsMatch, tailoredResumeToText } from '../utils/atsMatch';
 import type { ContactInfo } from '../types/contact';
 import type { TailoredResume } from '../types/resume';
-
-function stepIndex(step: AppStep): number {
-  return STEP_ORDER.indexOf(step);
-}
 
 function bulletsFromResponse(
   raw: Record<string, string[]>,
@@ -76,21 +69,11 @@ export default function AppPage() {
 
   const {
     contactInfo,
-    messages: chatMessages,
-    pendingField: pendingChatField,
     extracting: extractingProfile,
-    complete: contactComplete,
     initContactFromResume,
     resetContactInit,
     applyParsedContact,
-    sendMessage: onChatSend,
-    updateField: onContactFieldChange,
   } = useContactChat(state.user?.username);
-
-  const completedSteps = useMemo(() => {
-    const idx = stepIndex(state.step);
-    return STEP_ORDER.slice(0, idx);
-  }, [state.step]);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -421,23 +404,35 @@ export default function AppPage() {
     return res.blob();
   };
 
+  const selectedRepoNames = useMemo(
+    () => state.repos.filter((r) => r.selected).map((r) => r.name),
+    [state.repos],
+  );
+
   const transitionClass = 'animate-step-in';
 
   return (
-    <AppBackground>
-      <AppNav current={state.step} completed={completedSteps} />
-
-      {error && (
-        <div className="mx-auto max-w-6xl px-4 pt-4">
-          <div className="ui-flash ui-flash-error">{error}</div>
+    <div className="min-h-screen bg-background text-foreground">
+      {error && state.step !== 'export' && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4">
+          <div className="flex items-center gap-3 rounded border border-destructive/40 bg-destructive/10 px-4 py-3">
+            <AlertCircle size={16} className="text-destructive flex-shrink-0" />
+            <span className="text-destructive text-sm font-mono flex-1">{error}</span>
+            <button type="button" onClick={() => setError(null)} className="text-destructive hover:text-foreground text-sm">
+              ×
+            </button>
+          </div>
         </div>
       )}
 
-      <div key={analyzing ? 'loading' : state.step} className={transitionClass}>
-        {state.step === 'analyze' && analyzing ? (
-          <AnalyzeLoading active={analyzing} />
-        ) : state.step === 'analyze' ? (
+      {analyzing && (
+        <AnalyzeLoading active={analyzing} repoNames={selectedRepoNames} />
+      )}
+
+      <div key={state.step} className={transitionClass}>
+        {state.step === 'analyze' && !analyzing && (
           <StepAnalyze
+            user={state.user}
             repos={state.repos}
             loading={reposLoading}
             analyzing={analyzing}
@@ -447,7 +442,7 @@ export default function AppPage() {
             onDisplayNameChange={setDisplayName}
             onAnalyze={handleAnalyze}
           />
-        ) : null}
+        )}
 
         {state.step === 'bullets' && (
           <StepBullets
@@ -468,21 +463,15 @@ export default function AppPage() {
 
         {state.step === 'enrich' && (
           <StepEnrich
-            bullets={state.bullets}
             notes={state.notes}
             parsedResume={state.parsedResume}
             parsing={parsing}
-            contactInfo={contactInfo}
-            chatMessages={chatMessages}
-            pendingChatField={pendingChatField}
             extractingProfile={extractingProfile}
-            contactComplete={contactComplete}
             onNotesChange={handleNotesChange}
             onFileSelect={handleParseResume}
-            onContactFieldChange={onContactFieldChange}
-            onChatSend={onChatSend}
             onContinue={() => setStep('tailor')}
             onSkip={() => setStep('tailor')}
+            onBack={() => setStep('bullets')}
           />
         )}
 
@@ -490,10 +479,10 @@ export default function AppPage() {
           <StepTailor
             jobDescription={state.jobDescription}
             bullets={state.bullets}
-            contactInfo={contactInfo}
             generating={generating}
             onJobDescriptionChange={(jobDescription) => patch({ jobDescription })}
             onGenerate={handleTailor}
+            onBack={() => setStep('enrich')}
           />
         )}
 
@@ -515,6 +504,6 @@ export default function AppPage() {
           />
         )}
       </div>
-    </AppBackground>
+    </div>
   );
 }

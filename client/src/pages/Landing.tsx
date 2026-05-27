@@ -1,93 +1,149 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AppHeader from '../components/ui/AppHeader';
-import AppBox from '../components/ui/AppBox';
-import { AppLabel } from '../components/ui/AppBox';
-import { uiBtnClass } from '../components/ui/AppButton';
+import DesignLogo from '../components/ui/DesignLogo';
+import GlowButton from '../components/ui/GlowButton';
+import GitHubIcon from '../components/ui/GitHubIcon';
 
-const STEPS = [
-  { icon: '🔗', title: 'Connect', desc: 'Link your GitHub account securely with OAuth.' },
-  { icon: '🔍', title: 'Analyze', desc: 'We read commits, PRs, and project structure.' },
-  { icon: '📄', title: 'Generate', desc: 'Export an ATS-optimized resume as LaTeX or PDF.' },
-];
+interface PublicStats {
+  resumesGenerated: number;
+  atsPassRate: number;
+  avgTimeMinutes: number;
+}
 
-function ResumeMockup() {
-  return (
-    <AppBox className="relative mx-auto max-w-md">
-      <div className="border-b border-[var(--ui-border-muted)] pb-4">
-        <div className="h-3 w-32 rounded bg-[var(--ui-fg-default)]" />
-        <div className="mt-2 h-2 w-24 rounded bg-[var(--ui-neutral-muted)]" />
-      </div>
-      <div className="mt-4 space-y-2">
-        {[100, 85, 70].map((w) => (
-          <div key={w} className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--ui-accent-emphasis)]" />
-            <div className="h-2 rounded bg-[var(--ui-canvas-subtle)]" style={{ width: `${w}%` }} />
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 flex gap-2">
-        <AppLabel variant="accent">TypeScript</AppLabel>
-        <AppLabel variant="success">Node.js</AppLabel>
-      </div>
-    </AppBox>
-  );
+function formatResumeCount(n: number): string {
+  return `${n.toLocaleString()}${n >= 100 ? '+' : ''}`;
+}
+
+function formatAvgTime(minutes: number, hasData: boolean): string {
+  if (!hasData) return '—';
+  if (minutes <= 0) return '<1 min';
+  return `${minutes} min`;
 }
 
 export default function Landing() {
+  const [stats, setStats] = useState<PublicStats | null>(null);
+  const [statsError, setStatsError] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/stats/public')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load stats');
+        return res.json() as Promise<PublicStats>;
+      })
+      .then(setStats)
+      .catch(() => setStatsError(true));
+  }, []);
+
+  const statItems =
+    stats && !statsError
+      ? [
+          [formatResumeCount(stats.resumesGenerated), 'resumes generated'],
+          [`${stats.atsPassRate}%`, 'ATS pass rate'],
+          [
+            formatAvgTime(stats.avgTimeMinutes, stats.resumesGenerated > 0),
+            'avg time to resume',
+          ],
+        ]
+      : null;
+
   return (
-    <div className="ui-page">
-      <AppHeader
-        right={
-          <>
-            <a href="#how-it-works" className="hidden text-sm text-white/70 hover:text-white md:inline">How it works</a>
-            <Link to="/connect" className={`${uiBtnClass('primary')} ui-btn-sm`}>
-              Sign in
-            </Link>
-          </>
-        }
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(48,54,61,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(48,54,61,0.4) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(63,185,80,0.8) 2px, rgba(63,185,80,0.8) 3px)',
+        }}
+      />
+      <div
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse, rgba(88,166,255,0.07) 0%, transparent 70%)' }}
       />
 
-      <main className="ui-page-muted">
-        <section className="ui-container py-16 lg:py-24">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div>
-              <AppLabel variant="accent">AI-powered</AppLabel>
-              <h1 className="mt-4 text-[32px] font-semibold leading-tight text-[var(--ui-fg-default)] lg:text-[40px]">
-                Turn your GitHub into a job-winning resume
-              </h1>
-              <p className="mt-4 max-w-lg text-[var(--ui-fg-muted)]">
-                Analyze repositories, commits, and pull requests to build ATS-optimized resumes — the same way recruiters scan your profile.
-              </p>
-              <Link to="/connect" className={`${uiBtnClass('primary')} mt-6`}>
-                Connect with GitHub
-              </Link>
-              <p className="mt-3 text-sm text-[var(--ui-fg-subtle)]">Free · No credit card</p>
-            </div>
-            <ResumeMockup />
-          </div>
-        </section>
+      <nav className="relative z-10 flex items-center justify-between px-8 py-5 border-b border-border/50">
+        <DesignLogo />
+        <div className="flex items-center gap-4">
+          <Link
+            to="/dashboard"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-mono"
+          >
+            dashboard
+          </Link>
+          <Link to="/connect">
+            <GlowButton variant="ghost" className="text-sm font-mono">
+              sign in
+            </GlowButton>
+          </Link>
+        </div>
+      </nav>
 
-        <section id="how-it-works" className="border-t border-[var(--ui-border-default)] py-16">
-          <div className="ui-container grid gap-4 md:grid-cols-3">
-            {STEPS.map((item) => (
-              <AppBox key={item.title}>
-                <span className="text-2xl">{item.icon}</span>
-                <h3 className="mt-3 text-base font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-[var(--ui-fg-muted)]">{item.desc}</p>
-              </AppBox>
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-mono mb-8">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          GitHub activity → ATS-ready resume
+        </div>
+
+        <h1
+          className="font-display font-bold text-foreground mb-5 leading-[1.1] tracking-tight"
+          style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)' }}
+        >
+          Your GitHub history.
+          <br />
+          <span className="text-primary">Your next job.</span>
+        </h1>
+
+        <p className="text-muted-foreground text-lg max-w-xl mb-10 leading-relaxed">
+          Connect your GitHub and we&apos;ll write your resume from your actual work — commits,
+          PRs, and impact, turned into polished bullets that get past ATS.
+        </p>
+
+        <Link to="/connect">
+          <GlowButton className="text-base px-6 py-3 font-semibold">
+            <GitHubIcon size={18} />
+            Connect GitHub
+          </GlowButton>
+        </Link>
+
+        <p className="mt-5 text-xs text-muted-foreground font-mono">
+          No card required. <span className="text-foreground/60">Free.</span> Your data stays yours.
+        </p>
+
+        {statItems ? (
+          <div className="mt-16 flex items-center gap-8 text-sm font-mono">
+            {statItems.map(([n, l]) => (
+              <div key={l} className="flex flex-col items-center gap-1">
+                <span className="text-foreground font-semibold text-xl">{n}</span>
+                <span className="text-muted-foreground text-xs">{l}</span>
+              </div>
             ))}
           </div>
-        </section>
-
-        <section className="py-16">
-          <div className="ui-container text-center">
-            <h2 className="text-xl font-semibold">Built for developers who ship</h2>
-            <p className="mt-2 text-sm text-[var(--ui-fg-muted)]">
-              From GitHub activity to interview-ready PDF in minutes.
-            </p>
+        ) : !statsError ? (
+          <div className="mt-16 flex items-center gap-8 text-sm font-mono">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <span className="h-7 w-16 animate-pulse rounded bg-secondary" />
+                <span className="h-3 w-24 animate-pulse rounded bg-secondary/60" />
+              </div>
+            ))}
           </div>
-        </section>
+        ) : null}
       </main>
+
+      <footer className="relative z-10 flex items-center justify-between px-8 py-4 border-t border-border/50 text-xs text-muted-foreground font-mono">
+        <span>© 2026 git-apply</span>
+        <div className="flex gap-4">
+          <a href="https://github.com" className="hover:text-foreground transition-colors">github</a>
+          <a href="#" className="hover:text-foreground transition-colors">privacy</a>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
-import AppBox, { AppBoxHeader } from '../ui/AppBox';
-import AppButton from '../ui/AppButton';
+import { Check, ChevronRight, Copy } from 'lucide-react';
+import GlowButton from '../ui/GlowButton';
+import PageTopBar from '../ui/PageTopBar';
+import { copyToClipboard } from '../../utils/clipboard';
 import type { BulletItem, ProjectMeta } from '../../hooks/useAppState';
 
 interface StepBulletsProps {
@@ -33,12 +35,16 @@ export default function StepBullets({
   onChange,
   onContinue,
 }: StepBulletsProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [allCopied, setAllCopied] = useState(false);
   const [expandedReadme, setExpandedReadme] = useState<Record<string, boolean>>({});
 
   const grouped = useMemo(() => {
     const map = new Map<string, { displayName: string; items: BulletItem[] }>();
     for (const b of bullets) {
-      if (!map.has(b.repo)) map.set(b.repo, { displayName: b.displayName, items: [] });
+      if (!map.has(b.repo)) {
+        map.set(b.repo, { displayName: b.displayName, items: [] });
+      }
       map.get(b.repo)!.items.push(b);
     }
     return [...map.entries()];
@@ -50,103 +56,144 @@ export default function StepBullets({
     onChange(reindexByRepo(bullets.map((b) => (b.id === id ? { ...b, ...patch } : b))));
   };
 
-  const removeBullet = (id: string) => {
-    onChange(reindexByRepo(bullets.filter((b) => b.id !== id)));
+  const copyBullet = async (text: string, id: string) => {
+    await copyToClipboard(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const setRepoCount = (repo: string, displayName: string, target: number) => {
-    const repoBullets = bullets.filter((b) => b.repo === repo);
-    const others = bullets.filter((b) => b.repo !== repo);
-    const clamped = Math.max(1, Math.min(6, target));
-    let next = [...repoBullets];
-    while (next.length < clamped) next.push({ id: `${repo}-${next.length}`, text: '', repo, displayName, included: true });
-    while (next.length > clamped) next.pop();
-    onChange(reindexByRepo([...others, ...next]));
+  const copyAll = async () => {
+    const all = bullets
+      .filter((b) => b.included)
+      .map((b) => `• ${b.text}`)
+      .join('\n');
+    await copyToClipboard(all);
+    setAllCopied(true);
+    setTimeout(() => setAllCopied(false), 2000);
   };
 
   return (
-    <div className="ui-container py-6">
-      <div className="ui-page-header !border-0 !pb-4">
-        <h2 className="ui-page-title !text-xl">Review bullets</h2>
-        <p className="ui-page-desc">Edit bullets and add project context before tailoring.</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <PageTopBar crumb="review bullets" />
 
-      <div className="space-y-4">
-        {grouped.map(([repo, { displayName, items }]) => {
-          const meta = projectMeta[repo];
-          const readme = meta?.readmeExcerpt ?? '';
-          const showReadme = expandedReadme[repo] ?? false;
+      <div className="max-w-3xl mx-auto px-6 py-10">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="font-sans font-bold text-2xl text-foreground">Your resume bullets</h1>
+          <GlowButton onClick={copyAll} variant="ghost" className="text-sm font-mono">
+            {allCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+            {allCopied ? 'Copied!' : 'Copy all'}
+          </GlowButton>
+        </div>
 
-          return (
-            <AppBox key={repo}>
-              <AppBoxHeader
-                title={displayName}
-                action={
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[var(--ui-fg-muted)]">Bullets</span>
-                    <AppButton variant="default" className="ui-btn-sm !px-2" disabled={items.length <= 1} onClick={() => setRepoCount(repo, displayName, items.length - 1)}>−</AppButton>
-                    <input
-                      type="number"
-                      min={1}
-                      max={6}
-                      value={items.length}
-                      onChange={(e) => setRepoCount(repo, displayName, Number(e.target.value) || 1)}
-                      className="ui-input w-12 !py-1 text-center text-sm"
-                    />
-                    <AppButton variant="default" className="ui-btn-sm !px-2" disabled={items.length >= 6} onClick={() => setRepoCount(repo, displayName, items.length + 1)}>+</AppButton>
-                  </div>
-                }
-              />
-              <p className="mb-3 text-xs text-[var(--ui-fg-muted)]">{repo}</p>
-              {meta?.description && <p className="mb-3 text-sm">{meta.description}</p>}
+        <div className="space-y-8">
+          {grouped.map(([repo, { displayName, items }]) => {
+            const meta = projectMeta[repo];
+            const readme = meta?.readmeExcerpt ?? '';
+            const showReadme = expandedReadme[repo] ?? false;
 
-              {readme && (
-                <div className="mb-4 rounded-md border border-[var(--ui-border-muted)] bg-[var(--ui-canvas-subtle)] p-3">
-                  <button type="button" onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-semibold text-[var(--ui-fg-muted)]">
-                    README excerpt
-                    <span>{showReadme ? '▲' : '▼'}</span>
-                  </button>
-                  {showReadme && <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs">{readme}</pre>}
+            return (
+              <div key={repo}>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="font-mono text-sm text-muted-foreground font-semibold">
+                    {displayName}
+                  </span>
                 </div>
-              )}
 
-              <label className="block">
-                <span className="ui-form-label !text-xs">What does this project do?</span>
-                <textarea
-                  value={projectNotes[repo] ?? ''}
-                  onChange={(e) => onProjectNotesChange(repo, e.target.value)}
-                  rows={3}
-                  placeholder="Brief description for the tailor step…"
-                  className="ui-textarea mt-1"
-                />
-              </label>
+                {meta?.description && (
+                  <p className="text-xs text-muted-foreground mb-3 font-mono">{meta.description}</p>
+                )}
 
-              <ul className="mt-4 space-y-3">
-                {items.map((b, idx) => (
-                  <li key={b.id} className="flex gap-3">
-                    <span className="mt-2.5 w-5 shrink-0 text-center text-xs text-[var(--ui-fg-subtle)]">{idx + 1}</span>
-                    <input type="checkbox" checked={b.included} onChange={() => updateBullet(b.id, { included: !b.included })} className="ui-checkbox mt-2.5" />
-                    <textarea
-                      value={b.text}
-                      onChange={(e) => updateBullet(b.id, { text: e.target.value })}
-                      rows={2}
-                      placeholder="Bullet point…"
-                      className="ui-textarea min-h-[4rem] flex-1"
-                    />
-                    <AppButton variant="danger" className="ui-btn-sm !px-2" disabled={items.length <= 1} onClick={() => removeBullet(b.id)} aria-label="Delete">×</AppButton>
-                  </li>
-                ))}
-              </ul>
-            </AppBox>
-          );
-        })}
-      </div>
+                {readme && (
+                  <div className="mb-4 rounded border border-border bg-secondary p-3">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedReadme((s) => ({ ...s, [repo]: !showReadme }))}
+                      className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-mono text-muted-foreground"
+                    >
+                      README excerpt
+                      <span>{showReadme ? '▲' : '▼'}</span>
+                    </button>
+                    {showReadme && (
+                      <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs text-foreground/80">
+                        {readme}
+                      </pre>
+                    )}
+                  </div>
+                )}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--ui-border-muted)] pt-4">
-        <p className="text-sm text-[var(--ui-fg-muted)]">{includedCount} bullets · 1 page target</p>
-        <AppButton variant="primary" disabled={includedCount === 0} onClick={() => onContinue(bullets, projectNotes)}>
-          Continue
-        </AppButton>
+                <label className="block mb-4">
+                  <span className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
+                    What does this project do?
+                  </span>
+                  <textarea
+                    value={projectNotes[repo] ?? ''}
+                    onChange={(e) => onProjectNotesChange(repo, e.target.value)}
+                    rows={2}
+                    placeholder="Brief description for the tailor step…"
+                    className="mt-2 w-full rounded border border-border bg-card text-foreground text-sm font-sans p-3 resize-none placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
+                  />
+                </label>
+
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 p-4 rounded border border-border bg-card transition-opacity"
+                      style={{ opacity: item.included ? 1 : 0.4 }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => updateBullet(item.id, { included: !item.included })}
+                        className="mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer"
+                        style={{
+                          borderColor: item.included ? '#58A6FF' : '#30363D',
+                          backgroundColor: item.included ? '#58A6FF' : 'transparent',
+                        }}
+                      >
+                        {item.included && <Check size={10} className="text-primary-foreground" />}
+                      </button>
+                      <textarea
+                        value={item.text}
+                        onChange={(e) => updateBullet(item.id, { text: e.target.value })}
+                        rows={2}
+                        className="flex-1 bg-transparent text-sm font-sans leading-relaxed resize-none focus:outline-none"
+                        style={{
+                          color: item.included ? '#E6EDF3' : '#8B949E',
+                          textDecoration: item.included ? 'none' : 'line-through',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => copyBullet(item.text, item.id)}
+                        className="flex-shrink-0 p-1 rounded hover:bg-secondary transition-colors cursor-pointer"
+                      >
+                        {copiedId === item.id ? (
+                          <Check size={14} className="text-success" />
+                        ) : (
+                          <Copy size={14} className="text-muted-foreground hover:text-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground font-mono">
+            {includedCount} bullets selected
+          </p>
+          <GlowButton
+            onClick={() => onContinue(bullets, projectNotes)}
+            disabled={includedCount === 0}
+            className="font-semibold"
+          >
+            Continue
+            <ChevronRight size={16} />
+          </GlowButton>
+        </div>
       </div>
     </div>
   );

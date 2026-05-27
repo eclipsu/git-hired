@@ -1,114 +1,171 @@
-import { useRef } from 'react';
-import AppBox from '../ui/AppBox';
-import AppButton from '../ui/AppButton';
-import ContactChat from './ContactChat';
-import ResumePreview from '../resume/ResumePreview';
+import { useRef, useState } from 'react';
+import { ChevronRight, FileText, Upload, X } from 'lucide-react';
+import GlowButton from '../ui/GlowButton';
+import PageTopBar from '../ui/PageTopBar';
 import Spinner from '../ui/Spinner';
-import type { BulletItem } from '../../hooks/useAppState';
-import type { ChatMessage, ContactInfo } from '../../types/contact';
-import { CONTACT_FIELD_LABELS, missingContactFields } from '../../types/contact';
 
 interface StepEnrichProps {
-  bullets: BulletItem[];
   notes: string;
   parsedResume: { filename: string; text: string } | null;
   parsing: boolean;
-  contactInfo: ContactInfo;
-  chatMessages: ChatMessage[];
-  pendingChatField: keyof ContactInfo | null;
   extractingProfile: boolean;
-  contactComplete: boolean;
   onNotesChange: (notes: string) => void;
   onFileSelect: (file: File) => void;
-  onContactFieldChange: (field: keyof ContactInfo, value: string) => void;
-  onChatSend: (text: string) => void;
   onContinue: () => void;
   onSkip: () => void;
+  onBack: () => void;
 }
 
 export default function StepEnrich({
-  bullets,
   notes,
   parsedResume,
   parsing,
-  contactInfo,
-  chatMessages,
-  pendingChatField,
   extractingProfile,
-  contactComplete,
   onNotesChange,
   onFileSelect,
-  onContactFieldChange,
-  onChatSend,
   onContinue,
   onSkip,
+  onBack,
 }: StepEnrichProps) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const canContinue = Boolean(parsedResume) && contactComplete;
+  const [dragging, setDragging] = useState(false);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f) onFileSelect(f);
+  }
 
   return (
-    <div className="ui-container-wide py-6">
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="space-y-4">
-          <AppBox>
-            <h3 className="text-sm font-semibold">Upload resume</h3>
-            <p className="mt-1 text-xs text-[var(--ui-fg-muted)]">Extract contact info from PDF or DOCX.</p>
-            <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelect(f); }} />
+    <div className="min-h-screen bg-background">
+      <PageTopBar back={{ label: 'bullets', onClick: onBack }} crumb="enrich" />
+
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <h1 className="font-display font-bold text-2xl text-foreground mb-2">Add more context</h1>
+        <p className="text-muted-foreground text-sm mb-8">
+          The more we know, the better your resume.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-3 block">
+              Upload existing resume
+            </label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.docx"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onFileSelect(f);
+              }}
+            />
             {parsedResume ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                {(parsing || extractingProfile) && <Spinner />}
-                <span className="font-medium">{parsedResume.filename}</span>
-                {!parsing && !extractingProfile && <span className="text-[var(--ui-success-fg)]">✓</span>}
-                <button type="button" disabled={parsing || extractingProfile} onClick={() => fileRef.current?.click()} className="ui-link cursor-pointer text-xs disabled:opacity-50">Replace</button>
+              <div className="p-4 rounded border border-border bg-card space-y-2">
+                <div className="flex items-center gap-3">
+                  {(parsing || extractingProfile) && <Spinner />}
+                  <FileText size={16} className="text-primary flex-shrink-0" />
+                  <span className="font-mono text-sm text-foreground flex-1 truncate">
+                    {parsedResume.filename}
+                  </span>
+                  {!parsing && !extractingProfile && (
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="text-xs font-mono text-primary hover:underline cursor-pointer"
+                    >
+                      Replace
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                {extractingProfile && (
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Extracting contact info from your resume…
+                  </p>
+                )}
+                {!extractingProfile && !parsing && (
+                  <p className="text-xs text-success font-mono">
+                    Resume parsed — contact details will be pulled automatically.
+                  </p>
+                )}
               </div>
             ) : (
               <button
                 type="button"
                 disabled={parsing}
+                className="w-full h-48 rounded border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
+                style={{
+                  borderColor: dragging ? '#58A6FF' : '#30363D',
+                  backgroundColor: dragging ? 'rgba(88,166,255,0.05)' : '#161B22',
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
                 onClick={() => fileRef.current?.click()}
-                className="mt-3 flex w-full cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)] py-8 text-sm text-[var(--ui-fg-muted)] hover:border-[var(--ui-accent-emphasis)]"
               >
-                {parsing ? <><Spinner /><span>Parsing…</span></> : 'Drop PDF or DOCX'}
+                {parsing ? (
+                  <>
+                    <Spinner />
+                    <span className="text-sm text-muted-foreground">Parsing…</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={24} style={{ color: dragging ? '#58A6FF' : '#8B949E' }} />
+                    <div className="text-center">
+                      <p className="text-sm text-foreground">Drop your resume here</p>
+                      <p className="text-xs font-mono text-muted-foreground mt-1">PDF or DOCX</p>
+                    </div>
+                  </>
+                )}
               </button>
             )}
-          </AppBox>
+          </div>
 
-          {parsedResume && (
-            <ContactChat
-              contactInfo={contactInfo}
-              messages={chatMessages}
-              pendingField={pendingChatField}
-              extracting={extractingProfile}
-              onFieldChange={onContactFieldChange}
-              onSendMessage={onChatSend}
+          <div>
+            <label className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-3 block">
+              Anything else we should know?
+            </label>
+            <textarea
+              className="w-full h-48 rounded border border-border bg-card text-foreground text-sm p-4 resize-none placeholder:text-muted-foreground focus:outline-none focus:border-primary/60 transition-colors"
+              placeholder="e.g. I interned at a startup in 2022, I speak Spanish, I have a CS degree from UT Austin, I'm targeting staff-level roles at infrastructure companies..."
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
             />
-          )}
-
-          <AppBox>
-            <h3 className="text-sm font-semibold">Additional notes</h3>
-            <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)} placeholder="Internships, freelance, etc." className="ui-textarea mt-3 h-28" />
-          </AppBox>
-        </aside>
-
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Preview</h2>
-            <span className="text-xs text-[var(--ui-fg-muted)]">{bullets.filter((b) => b.included).length} bullets</span>
           </div>
-          <div className="overflow-hidden rounded-md border border-[var(--ui-border-default)]">
-            <ResumePreview contactInfo={contactInfo} bullets={bullets} />
-          </div>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-            {parsedResume && !contactComplete && (
-              <p className="text-sm text-[var(--ui-fg-muted)]">
-                Missing: {missingContactFields(contactInfo).map((f) => CONTACT_FIELD_LABELS[f]).join(', ')}
-              </p>
+        </div>
+
+        <div className="mt-8 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground font-mono">
+            {parsedResume
+              ? 'Resume uploaded — continue when ready'
+              : 'Upload a resume or skip to tailor'}
+          </p>
+          <div className="flex gap-3">
+            {!parsedResume && (
+              <GlowButton onClick={onSkip} variant="ghost" className="font-mono text-sm">
+                Skip to tailor
+              </GlowButton>
             )}
-            {!parsedResume && <p className="text-sm text-[var(--ui-fg-muted)]">Upload a resume or skip to tailor.</p>}
-            <div className="ml-auto flex gap-2">
-              {!parsedResume && <AppButton variant="default" onClick={onSkip}>Skip to tailor</AppButton>}
-              <AppButton variant="primary" disabled={!canContinue} onClick={onContinue}>Continue</AppButton>
-            </div>
+            <GlowButton
+              onClick={onContinue}
+              disabled={parsing}
+              className="font-semibold"
+            >
+              Continue
+              <ChevronRight size={16} />
+            </GlowButton>
           </div>
         </div>
       </div>

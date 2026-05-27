@@ -1,5 +1,10 @@
 # Production-only compose (no --profile flag needed).
-# Usage: docker-compose -f docker-compose.prod.yml up -d --build
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+#
+# After first deploy, seed landing page stats from saved versions (optional):
+#   docker compose -f docker-compose.prod.yml exec app node dist/cli/backfillPlatformStats.js
+#
+# Verify public stats: curl http://localhost:4000/api/stats/public
 
 services:
   app:

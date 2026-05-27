@@ -27,3 +27,14 @@ curl -sf http://localhost:4000/api/health && echo || {
   $COMPOSE -f docker-compose.prod.yml logs --tail 40 app
   exit 1
 }
+
+echo ""
+echo "Public landing stats:"
+curl -sf http://localhost:4000/api/stats/public && echo || echo "(stats endpoint not ready yet)"
+
+echo ""
+echo "Seeding landing stats from saved resume versions (safe to re-run)..."
+$COMPOSE -f docker-compose.prod.yml exec -T app node dist/cli/backfillPlatformStats.js || {
+  echo "Backfill skipped or failed — run manually after first tailor events:"
+  echo "  $COMPOSE -f docker-compose.prod.yml exec app node dist/cli/backfillPlatformStats.js"
+}

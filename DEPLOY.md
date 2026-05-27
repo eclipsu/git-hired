@@ -18,6 +18,8 @@ Browser → https://your-app.vercel.app
 - [x] `src/index.ts` — `trust proxy` in production (session cookies behind Vercel)
 - [x] `Dockerfile` — copies `tex/` for LaTeX PDF generation
 - [x] `docker-compose.yml` — prod profile on port **4000**
+- [x] `GET /api/stats/public` — live landing page metrics (no auth)
+- [x] `npm run backfill:stats` — seed resume count from saved versions (runs in prod container after build)
 
 ### You still need to do
 
@@ -35,6 +37,11 @@ Browser → https://your-app.vercel.app
 - [ ] Run: `docker-compose -f docker-compose.prod.yml up -d --build`
   (or `./scripts/ec2-deploy.sh` — no `--profile` flag needed)
 - [ ] Verify: `curl http://localhost:4000/api/health` → `{"ok":true}`
+- [ ] Verify landing stats: `curl http://localhost:4000/api/stats/public`
+- [ ] Optional (first deploy): seed stats from saved versions:
+  ```bash
+  docker compose -f docker-compose.prod.yml exec app node dist/cli/backfillPlatformStats.js
+  ```
 - [ ] Optional: add **swap** (1–2 GB) if PDF compile runs out of memory on t3.micro
 
 #### 2. Vercel
@@ -81,8 +88,8 @@ Restart container after editing: `docker-compose -f docker-compose.prod.yml up -
 ## Quick EC2 commands
 
 ```bash
-git clone https://github.com/eclipsu/git-hired.git
-cd git-hired
+git clone https://github.com/eclipsu/git-apply.git
+cd git-apply
 cp .env.production.example .env
 nano .env   # fill in values — required before docker will work
 
@@ -122,6 +129,8 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | PDF compile fails / missing `.sty` | Pull latest; rebuild with `texlive-latex-recommended` + `texlive-latex-extra` (not fonts-extra). Template uses `geometry` instead of `fullpage`. |
 | Vercel 404 on `/app` or `/connect` | Ensure `vercel.json` has SPA fallback rewrite to `/index.html` |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |
+| Landing stats show loading forever | Check `GET /api/stats/public` on EC2; Vercel rewrites must include `/api/*` |
+| Landing stats all zeros | Expected on fresh deploy — complete one analyze→tailor flow, or run backfill for resume count only |
 
 ---
 

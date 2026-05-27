@@ -66,6 +66,9 @@ export class ResumeSession {
   @Column('text', { nullable: true })
   generatedTex!: string;
 
+  @Column({ type: 'datetime', nullable: true })
+  analyzeCompletedAt!: Date | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

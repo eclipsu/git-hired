@@ -1,5 +1,5 @@
 {
-  "name": "git-hired",
+  "name": "git-apply",
   "version": "1.0.0",
   "private": true,
   "description": "Turn GitHub activity into an ATS-optimized resume",
@@ -12,6 +12,8 @@
     "build:server": "tsc",
     "build:client": "npm run build --prefix client",
     "start": "node dist/index.js",
+    "backfill:stats": "node dist/cli/backfillPlatformStats.js",
+    "backfill:stats:dev": "ts-node src/cli/backfillPlatformStats.ts",
     "docker:dev": "docker compose up --build",
     "docker:prod": "docker compose --profile prod up --build"
   },

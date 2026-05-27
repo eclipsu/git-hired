@@ -42,7 +42,7 @@ EXPOSE 3000 5173
 
 CMD ["npm", "run", "dev"]
 
-# --- production build (API only; frontend on Vercel) ---
+# --- production build (API + CLI; frontend on Vercel) ---
 FROM deps-server AS build
 
 COPY tsconfig.json ./
@@ -51,6 +51,7 @@ COPY tex ./tex
 
 ENV NODE_OPTIONS=--max-old-space-size=512
 RUN npm run build:server
+# compiles src/cli/backfillPlatformStats.ts → dist/cli/ for Docker backfill
 
 # --- production runtime ---
 FROM base AS production

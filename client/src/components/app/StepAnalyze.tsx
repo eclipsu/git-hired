@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { AppFlash } from '../ui/AppBox';
-import AppButton from '../ui/AppButton';
-import type { RepoItem } from '../../hooks/useAppState';
+import { Check, ChevronRight, GitCommit, Star } from 'lucide-react';
+import GlowButton from '../ui/GlowButton';
+import LanguagePill from '../ui/LanguagePill';
+import PageTopBar from '../ui/PageTopBar';
+import type { RepoItem, UserProfile } from '../../hooks/useAppState';
 
 interface StepAnalyzeProps {
+  user: UserProfile | null;
   repos: RepoItem[];
   loading: boolean;
   analyzing: boolean;
@@ -14,12 +17,10 @@ interface StepAnalyzeProps {
   onAnalyze: () => void;
 }
 
-function relativeTime(): string {
-  return 'recently';
-}
-
 function RepoSkeleton() {
-  return <div className="h-24 animate-pulse rounded-md border border-[var(--ui-border-default)] bg-[var(--ui-canvas-subtle)]" />;
+  return (
+    <div className="h-28 animate-pulse rounded border border-border bg-card" />
+  );
 }
 
 function EditableDisplayName({
@@ -41,9 +42,15 @@ function EditableDisplayName({
         autoFocus
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => { onChange(draft.trim() || value); setEditing(false); }}
-        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-        className="ui-input mt-1 !py-1 text-xs"
+        onBlur={() => {
+          onChange(draft.trim() || value);
+          setEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+        className="mt-1 w-full rounded border border-border bg-input px-2 py-1 text-xs font-mono text-foreground focus:outline-none focus:border-primary/60"
+        onClick={(e) => e.stopPropagation()}
       />
     );
   }
@@ -52,15 +59,19 @@ function EditableDisplayName({
     <button
       type="button"
       disabled={disabled}
-      onClick={() => setEditing(true)}
-      className="mt-1 flex cursor-pointer items-center gap-1 text-left text-xs text-[var(--ui-fg-muted)] hover:text-[var(--ui-accent-fg)] disabled:opacity-50"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+      className="mt-1 text-xs font-mono text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
     >
-      {value} <span className="opacity-60">✎</span>
+      {value} ✎
     </button>
   );
 }
 
 export default function StepAnalyze({
+  user,
   repos,
   loading,
   analyzing,
@@ -70,62 +81,119 @@ export default function StepAnalyze({
   onDisplayNameChange,
   onAnalyze,
 }: StepAnalyzeProps) {
-  const selectedCount = repos.filter((r) => r.selected).length;
+  const selected = repos.filter((r) => r.selected);
+  const languages = new Set(repos.map((r) => r.primaryLanguage).filter(Boolean));
+  const totalCommits = repos.reduce((sum, r) => sum + r.commitCount, 0);
 
   return (
-    <div className="ui-container-wide py-6">
-      <div className="ui-page-header !border-0 !pb-4">
-        <h2 className="ui-page-title !text-xl">Select repositories</h2>
-        <p className="ui-page-desc">
-          Choose which projects to include on your resume.
-          {fromCache && !loading && <span className="ui-label ui-label-accent ml-2">Cached</span>}
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <PageTopBar crumb="analyze" />
 
-      {cacheHint && <AppFlash variant="success">{cacheHint}</AppFlash>}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        {user && (
+          <div className="flex items-center gap-4 p-5 rounded border border-border bg-card mb-8">
+            <img
+              src={user.avatarUrl}
+              alt=""
+              className="w-12 h-12 rounded-full border-2 border-primary"
+              style={{ boxShadow: '0 0 12px rgba(88,166,255,0.3)' }}
+            />
+            <div>
+              <p className="font-mono font-semibold text-foreground">@{user.username}</p>
+              <p className="text-xs text-muted-foreground font-mono">Connected via GitHub OAuth</p>
+            </div>
+            <div className="ml-auto flex items-center gap-6 text-sm font-mono">
+              {[
+                [String(repos.length), 'repos'],
+                [String(languages.size), 'languages'],
+                [totalCommits.toLocaleString(), 'commits'],
+              ].map(([n, l]) => (
+                <div key={l} className="text-center">
+                  <p className="text-foreground font-semibold text-base">{n}</p>
+                  <p className="text-muted-foreground text-xs">{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-      <div className="space-y-2">
-        {loading
-          ? Array.from({ length: 5 }).map((_, i) => <RepoSkeleton key={i} />)
-          : repos.map((repo) => (
-              <label
-                key={repo.name}
-                className={`ui-box-row cursor-pointer ${repo.selected ? 'ui-box-row-selected' : ''} ${analyzing ? 'pointer-events-none opacity-60' : ''}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={repo.selected}
-                  onChange={() => onToggle(repo.name)}
-                  className="ui-checkbox mt-1"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-[var(--ui-accent-fg)]">{repo.name}</h3>
-                    <span className="shrink-0 text-xs text-[var(--ui-fg-subtle)]">Updated {relativeTime()}</span>
-                  </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-sans font-semibold text-foreground">
+            Select repositories to analyze
+          </h2>
+          <span className="text-xs font-mono text-muted-foreground">
+            {selected.length} selected
+            {fromCache && !loading && (
+              <span className="ml-2 text-primary">· cached</span>
+            )}
+          </span>
+        </div>
+
+        {cacheHint && (
+          <div className="mb-4 rounded border border-success/30 bg-success/10 px-4 py-3 text-sm text-success font-mono">
+            {cacheHint}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-24">
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => <RepoSkeleton key={i} />)
+            : repos.map((repo) => (
+                <button
+                  key={repo.name}
+                  type="button"
+                  onClick={() => onToggle(repo.name)}
+                  disabled={analyzing}
+                  className="text-left p-4 rounded border transition-all duration-150 cursor-pointer relative group disabled:opacity-60"
+                  style={{
+                    borderColor: repo.selected ? '#58A6FF' : '#30363D',
+                    backgroundColor: repo.selected ? 'rgba(88,166,255,0.05)' : '#161B22',
+                    boxShadow: repo.selected ? '0 0 0 1px rgba(88,166,255,0.3)' : 'none',
+                  }}
+                >
+                  {repo.selected && (
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check size={12} className="text-primary-foreground" />
+                    </div>
+                  )}
+                  <p className="font-mono font-semibold text-foreground text-sm mb-1 pr-6">
+                    {repo.name}
+                  </p>
                   <EditableDisplayName
                     value={repo.displayName}
                     onChange={(v) => onDisplayNameChange(repo.name, v)}
                     disabled={analyzing}
                   />
-                  <p className="mt-1 line-clamp-1 text-xs text-[var(--ui-fg-muted)]">
-                    {repo.description || 'No description'}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--ui-fg-muted)]">
-                    {repo.primaryLanguage && (
-                      <span className="ui-label ui-label-default">{repo.primaryLanguage}</span>
-                    )}
-                    <span>{repo.commitCount} commits · ★ {repo.stars}</span>
+                  {repo.primaryLanguage && (
+                    <div className="mt-2">
+                      <LanguagePill lang={repo.primaryLanguage} />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 mt-3 text-xs font-mono text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Star size={11} /> {repo.stars}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <GitCommit size={11} /> {repo.commitCount}
+                    </span>
                   </div>
-                </div>
-              </label>
-            ))}
+                </button>
+              ))}
+        </div>
       </div>
 
-      <div className="fixed bottom-6 right-6 z-30">
-        <AppButton variant="primary" disabled={analyzing || selectedCount === 0 || loading} onClick={onAnalyze}>
-          {analyzing ? 'Analyzing…' : `Analyze ${selectedCount} repos`}
-        </AppButton>
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card/95 backdrop-blur px-8 py-4 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground font-mono">
+          {selected.length} repo{selected.length !== 1 ? 's' : ''} selected
+        </span>
+        <GlowButton
+          onClick={onAnalyze}
+          disabled={analyzing || selected.length === 0 || loading}
+          className="font-semibold"
+        >
+          Analyze {selected.length} repos
+          <ChevronRight size={16} />
+        </GlowButton>
       </div>
     </div>
   );

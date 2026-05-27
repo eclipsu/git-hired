@@ -22,6 +22,7 @@ import compileRoutes from './routes/compile';
 import versionsRoutes from './routes/versions';
 import shareRoutes from './routes/share';
 import dashboardRoutes from './routes/dashboard';
+import publicStatsRoutes from './routes/publicStats';
 import { isPdflatexAvailable, pdflatexErrorMessage } from './lib/pdflatex';
 
 dotenv.config();
@@ -128,6 +129,7 @@ async function main() {
   app.use('/api/versions', versionsRoutes);
   app.use('/api/share', shareRoutes);
   app.use('/api/dashboard', dashboardRoutes);
+  app.use('/api/stats', publicStatsRoutes);
 
   app.use((err: Error, _req: Request, res: Response, _next: () => void) => {
     console.error(err);

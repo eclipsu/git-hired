@@ -1,5 +1,5 @@
-# GitHired — System Design
-## Overview**GitHired** is a full-stack SaaS application that turns a developer's **GitHub activity** into an **ATS-optimized resume**. Users authenticate with GitHub, select repositories, generate AI-powered bullet points, upload an existing resume for contact/context, tailor content to a job description, and export a **Jake Gutierrez LaTeX PDF**.
+# Gitapply — System Design
+## Overview**Gitapply** is a full-stack SaaS application that turns a developer's **GitHub activity** into an **ATS-optimized resume**. Users authenticate with GitHub, select repositories, generate AI-powered bullet points, upload an existing resume for contact/context, tailor content to a job description, and export a **Jake Gutierrez LaTeX PDF**.
 ---
 ## High-Level Architecture
 ┌─────────────────────────────────────────────────────────────┐ │ React SPA (Vite) │ │ / /connect /app /dashboard /post/:code │ └──────────────────────────┬──────────────────────────────────┘ │ credentials: include (session cookie) ┌──────────────────────────▼──────────────────────────────────┐ │ Express API (:3000) │ │ Auth · REST /api/* · LaTeX compile (pdflatex) │ └──────┬─────────────────┬─────────────────┬───────────────────┘ │ │ │ ▼ ▼ ▼ SQLite GitHub API Google Gemini (TypeORM) (Octokit) (generateContent)
@@ -56,8 +56,9 @@ State lives in React (`useAppState`, `useContactChat`); session is restored from
 | `/api/compile` | TeX → PDF blob |
 | `/api/versions` | CRUD saved resume versions |
 | `/api/share` | Create/list share links; public `GET /:code` + PDF |
-| `/api/dashboard/stats` | Repo/commit/tech aggregates |
-All `/api/*` routes (except public share) use **`requireAuth`** + cookie session.
+| `/api/dashboard/stats` | Repo/commit/tech aggregates (auth) |
+| `/api/stats/public` | Landing page metrics — resumes, ATS pass rate, avg time (public) |
+All `/api/*` routes (except public share and `/api/stats/public`) use **`requireAuth`** + cookie session.
 ---
 ## Data Model
 User ├── ResumeSession (working draft, persisted across refreshes) └── ResumeVersion (saved snapshot: name + tex + JD + contact) └── ShareLink (short code /post/:code, click analytics)
@@ -133,4 +134,29 @@ Template: **Jake Gutierrez / sb2nov** (`tex/resume-template.tex`).
 | One Gemini call per repo | Simple but burns free-tier quota on many repos |
 | Monolith | No separate worker/queue; analyze/tailor are synchronous HTTP |
 ---
+## Platform Landing Stats
+
+Public marketing metrics on `/` are loaded from **`GET /api/stats/public`** (no auth, 5-minute in-memory cache, rate-limited).
+
+| Stat | Source |
+|------|--------|
+| Resumes generated | Count of successful `POST /api/tailor` completions |
+| ATS pass rate | % of generations where `pageCount === 1` and (no JD or keyword match ≥ 70%) |
+| Avg time to resume | Mean ms from `ResumeSession.analyzeCompletedAt` to tailor success |
+
+**Write path:** `POST /api/analyze` sets `analyzeCompletedAt`; `POST /api/tailor` inserts `ResumeGenerationEvent` and increments `PlatformStats` singleton (`src/lib/platformStats.ts`).
+
+**Bootstrap:** `npm run backfill:stats` seeds resume count from `ResumeVersion` rows. In Docker prod: `docker compose -f docker-compose.prod.yml exec app node dist/cli/backfillPlatformStats.js`
+
+**Entities:** `ResumeGenerationEvent` (audit log), `PlatformStats` (id=1 counters), `ResumeSession.analyzeCompletedAt`.
+
+---
 ## Key File Paths
+
+| Path | Role |
+|------|------|
+| `src/routes/publicStats.ts` | Public stats API |
+| `src/lib/platformStats.ts` | Counter updates + cache |
+| `src/lib/atsMatch.ts` | Server-side ATS keyword match |
+| `src/cli/backfillPlatformStats.ts` | One-time stats seed (compiled to `dist/cli/`) |
+| `client/src/pages/Landing.tsx` | Fetches and displays live stats |
