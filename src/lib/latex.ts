@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path from 'path';
+import { getResumeTemplatePath } from './appPaths';
 
 const LATEX_SPECIAL = /[&%$#_{}~^\\]/g;
 
@@ -99,8 +99,6 @@ function experienceSection(entries: ResumeEntry[]): string {
   if (entries.length === 0) {
     return `%-----------EXPERIENCE-----------
 ${sectionHeading('Experience')}
-  \\resumeSubHeadingListStart
-  \\resumeSubHeadingListEnd
 \\vspace{-10pt}
 `;
   }
@@ -130,8 +128,6 @@ function projectsSection(entries: ProjectEntry[]): string {
     return `%-----------PROJECTS-----------
 ${sectionHeading('Projects')}
     \\vspace{-5pt}
-    \\resumeSubHeadingListStart
-    \\resumeSubHeadingListEnd
 \\vspace{-10pt}
 `;
   }
@@ -254,7 +250,7 @@ function headingSection(contact: ContactInfo): string {
 }
 
 function loadPreamble(): string {
-  const templatePath = path.join(process.cwd(), 'tex', 'resume-template.tex');
+  const templatePath = getResumeTemplatePath();
   if (!fs.existsSync(templatePath)) {
     throw new Error('Missing tex/resume-template.tex');
   }

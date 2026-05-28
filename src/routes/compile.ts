@@ -1,12 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
-import { compileTexToPdf } from '../lib/latexCompile';
+import { compileTexToPdf, getLatexFontStatus } from '../lib/latexCompile';
 import { isPdflatexAvailable, pdflatexErrorMessage } from '../lib/pdflatex';
 
 const router = Router();
 
 router.get('/status', requireAuth, (_req: Request, res: Response) => {
-  res.json({ available: isPdflatexAvailable() });
+  const fonts = getLatexFontStatus();
+  res.json({
+    available: isPdflatexAvailable(),
+    fontAssets: fonts.ok,
+    texmfHome: fonts.texmfHome,
+    ...(fonts.ok ? {} : { missingFontAssets: fonts.missing }),
+  });
 });
 
 router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {

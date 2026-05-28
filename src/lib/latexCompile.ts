@@ -1,16 +1,25 @@
-import fs from 'fs';
-import path from 'path';
 import { Readable } from 'stream';
 import latex from 'node-latex';
+import { configureTexmfHome, getFontAwesomeAssetStatus } from './appPaths';
 
-const TEXMF_HOME = path.join(process.cwd(), 'tex', 'texmf');
+/** Vendored fontawesome5 (PFB + TFM + map) — production has no texlive-fonts-extra. */
+configureTexmfHome();
 
-/** Vendored fontawesome5 (~750KB) — avoids texlive-fonts-extra on small EC2. */
-if (fs.existsSync(TEXMF_HOME)) {
-  process.env.TEXMFHOME = TEXMF_HOME;
+export function getLatexFontStatus(): ReturnType<typeof getFontAwesomeAssetStatus> {
+  return getFontAwesomeAssetStatus();
 }
 
 export function compileTexToPdf(tex: string): Promise<Buffer> {
+  const texmfHome = configureTexmfHome();
+  if (!texmfHome) {
+    const { missing } = getFontAwesomeAssetStatus();
+    return Promise.reject(
+      new Error(
+        `Vendored Font Awesome files missing (required in production Docker). Missing: ${missing.join(', ')}`,
+      ),
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const input = Readable.from([tex]);
     const pdf = latex(input, { errorLogs: 'buffer' as unknown as string });

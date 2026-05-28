@@ -12,7 +12,7 @@ RUN apt-get update \
     texlive-fonts-recommended \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 # latex-extra: titlesec, enumitem, etc. Do NOT add texlive-fonts-extra (~500MB).
-# fontawesome5 icons are vendored in tex/texmf/ (~750KB).
+# fontawesome5 is vendored in tex/texmf/ (PFB + TFM + map, ~850KB).
 
 WORKDIR /app
 
@@ -63,6 +63,21 @@ RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/tex ./tex
+
+# Fail the image build if vendored Font Awesome is incomplete (prod has no texlive-fonts-extra).
+RUN test -f tex/texmf/fonts/tfm/public/fontawesome5/fa5free2solid.tfm \
+  && test -f tex/texmf/fonts/map/dvips/fontawesome5/fontawesome5.map \
+  && printf '%s\n' \
+    '\documentclass{article}' \
+    '\pdfmapfile{+fontawesome5}' \
+    '\usepackage{fontawesome5}' \
+    '\begin{document}' \
+    '\faPhone' \
+    '\end{document}' \
+    > /tmp/fa-test.tex \
+  && TEXMFHOME=/app/tex/texmf pdflatex -halt-on-error -jobname=fa-test -output-directory=/tmp /tmp/fa-test.tex \
+  && test -f /tmp/fa-test.pdf \
+  && rm -rf /tmp/fa-test.*
 
 RUN mkdir -p data
 
