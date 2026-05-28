@@ -124,8 +124,9 @@ sudo docker-compose -f docker-compose.prod.yml logs -f app
 | OAuth redirects to wrong place | `FRONTEND_URL` + GitHub callback must match Vercel URL exactly |
 | 401 on all API calls after login | Ensure `trust proxy` is set (production) and you use **HTTPS Vercel URL** |
 | Vercel 502 / timeout | EC2 security group must allow **4000**; container must be running |
+| Docker build `ENOSPC` / `no space left on device` during `npm ci` | EC2 disk full. Run `sudo docker system prune -af && sudo docker builder prune -af`, check `df -h /` (need **≥2GB free**). Latest Dockerfile reuses `node_modules` from the build stage instead of running `npm ci` twice. Add a larger EBS volume if needed. |
 | Docker build stuck at `npm run build` | t3.micro OOM/slow — pull latest (prod Docker skips client/Vite build). Add swap: `sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile` |
-| Docker build `No space left on device` on texlive | **Pull latest first** — old Dockerfiles included `texlive-fonts-extra` (~500MB). Verify: `grep fonts-extra Dockerfile` must print nothing. Then: `sudo docker system prune -af && sudo docker builder prune -af`, check `df -h /`, add swap if under 2GB free, rebuild with `--no-cache`. |
+| Docker build `No space left on device` on texlive | **Pull latest first** — old Dockerfiles included `texlive-fonts-extra` (~500MB). Verify: `grep fonts-extra Dockerfile` must print nothing. Then prune Docker cache (see ENOSPC row above). |
 | PDF compile fails / missing `.sty` | Pull latest; rebuild with `texlive-latex-recommended` + `texlive-latex-extra` (not fonts-extra). Template uses `geometry` instead of `fullpage`. |
 | Vercel 404 on `/app` or `/connect` | Ensure `vercel.json` has SPA fallback rewrite to `/index.html` |
 | IP changed, app broken | Use Elastic IP; update `client/vercel.json` and redeploy Vercel |

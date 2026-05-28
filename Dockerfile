@@ -29,7 +29,8 @@ RUN npm ci \
 FROM base AS deps-server
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci \
+  && npm cache clean --force
 
 # --- development ---
 FROM deps AS dev
@@ -59,7 +60,10 @@ FROM base AS production
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Reuse deps from build stage — avoids a second npm ci (saves ~1GB peak disk during build).
+COPY --from=deps-server /app/node_modules ./node_modules
+RUN npm prune --omit=dev \
+  && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/tex ./tex
