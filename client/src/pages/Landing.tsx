@@ -138,7 +138,7 @@ export default function Landing() {
       </main>
 
       <footer className="relative z-10 flex items-center justify-between px-8 py-4 border-t border-border/50 text-xs text-muted-foreground font-mono">
-        <span>© 2026 git-apply</span>
+        <span>© 2026 GitApply</span>
         <div className="flex gap-4">
           <a href="https://github.com" className="hover:text-foreground transition-colors">github</a>
           <a href="#" className="hover:text-foreground transition-colors">privacy</a>

@@ -1,8 +1,81 @@
-# git-hired
+# GitApply
 
 Turn your GitHub activity into an ATS-optimized resume. Connect GitHub, select repositories, generate AI-powered bullet points, tailor to a job description, and export a Jake LaTeX PDF.
 
 **Deploy:** [DEPLOY.md](./DEPLOY.md) — Vercel frontend + EC2 backend (free tier, no domain).
+
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph ClientTier["Client Tier"]
+        Browser["Browser"]
+        ReactSPA["React SPA<br/>Vite + TypeScript"]
+        ViteDev["Vite Dev Server<br/>:5173 proxy"]
+        Vercel["Vercel CDN<br/>prod static + rewrites"]
+    end
+
+    subgraph ApplicationTier["Application Tier"]
+        Express["Express API Monolith<br/>Passport · REST /api/* · Helmet"]
+    end
+
+    subgraph InProcess["In-Process Processing<br/>same Node.js process"]
+        ResumeParser["Resume Parser<br/>mammoth · pdf-parse"]
+        LatexPipeline["LaTeX Pipeline<br/>generateLatex · node-latex · pdflatex"]
+    end
+
+    subgraph External["External Dependencies"]
+        GitHubOAuth["GitHub OAuth"]
+        GitHubAPI["GitHub REST API<br/>Octokit"]
+        Gemini["Google Gemini API<br/>generateContent"]
+    end
+
+    subgraph DataLayer["Data Layer"]
+        AppDB[("SQLite App DB<br/>git-apply.db")]
+        SessionDB[("SQLite Session Store<br/>sessions.db")]
+        DockerVol[("Docker Volume<br/>app_data")]
+    end
+
+    subgraph Caching["Caching & Rate Limiting"]
+        StatsCache[("In-Memory Public Stats<br/>5 min TTL")]
+        RateLimit[("In-Memory Rate Limiter<br/>60 req/min per IP")]
+        SessionCaches[("ResumeSession Caches<br/>repos 24h · bullet fingerprints")]
+    end
+
+    BackfillCLI["Stats Backfill CLI<br/>one-off npm script"]
+
+    Browser --> ReactSPA
+    ReactSPA -->|"dev /api · /auth"| ViteDev
+    ViteDev -->|"proxy to :3000"| Express
+    Browser -->|"prod HTTPS"| Vercel
+    Vercel -->|"static SPA assets"| ReactSPA
+    Vercel -->|"rewrite /api · /auth"| Express
+
+    Express -->|"OAuth login/logout"| GitHubOAuth
+    Express -->|"repos · commits · PRs · README"| GitHubAPI
+    Express -->|"analyze · tailor · extract · page-fit"| Gemini
+
+    Express -->|"POST /api/parse-resume"| ResumeParser
+    Express -->|"POST /api/tailor · /api/compile"| LatexPipeline
+    ResumeParser -->|"plain text"| Express
+    LatexPipeline -->|"PDF buffer"| Express
+
+    Express -->|"TypeORM CRUD"| AppDB
+    Express -->|"express-session store"| SessionDB
+    AppDB -.->|"EC2 persistence"| DockerVol
+    SessionDB -.->|"EC2 persistence"| DockerVol
+
+    Express -->|"wizard state · repo/bullet cache"| SessionCaches
+    SessionCaches -->|"stored in ResumeSession rows"| AppDB
+
+    Express -->|"GET /api/stats/public"| RateLimit
+    RateLimit -->|"allowed requests"| StatsCache
+    StatsCache -->|"cache miss refresh"| AppDB
+
+    BackfillCLI -.->|"seed PlatformStats"| AppDB
+```
+
+See [ARCHITECTURE_EXPLANATION.md](./ARCHITECTURE_EXPLANATION.md) for a layer-by-layer walkthrough.
 
 ## Stack
 

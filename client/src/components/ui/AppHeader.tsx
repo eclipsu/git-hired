@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { GitapplyLogo } from './AppLogo';
+import { GitApplyLogo } from './AppLogo';
 
 interface NavItem {
   to: string;
@@ -16,7 +16,7 @@ export default function AppHeader({ nav, right }: AppHeaderProps) {
   return (
     <header className="ui-header">
       <div className="ui-header-inner">
-        <GitapplyLogo to="/dashboard" />
+        <GitApplyLogo to="/dashboard" />
 
         {nav && nav.length > 0 && (
           <nav className="ui-header-nav">

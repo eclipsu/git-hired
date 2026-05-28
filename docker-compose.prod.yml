@@ -12,7 +12,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: git-hired-prod
+    container_name: gitapply-prod
     ports:
       - "4000:4000"
     env_file:

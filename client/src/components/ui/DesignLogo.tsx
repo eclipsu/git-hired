@@ -8,9 +8,8 @@ interface DesignLogoProps {
 export default function DesignLogo({ to = '/', className = '' }: DesignLogoProps) {
   const logo = (
     <span className={`font-display font-bold text-foreground tracking-tight text-lg ${className}`}>
-      <span className="text-primary">git</span>
-      <span className="text-muted-foreground">-</span>
-      <span>apply</span>
+      <span className="text-primary">Git</span>
+      <span>Apply</span>
     </span>
   );
 

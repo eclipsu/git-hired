@@ -1,5 +1,5 @@
-# Gitapply — System Design
-## Overview**Gitapply** is a full-stack SaaS application that turns a developer's **GitHub activity** into an **ATS-optimized resume**. Users authenticate with GitHub, select repositories, generate AI-powered bullet points, upload an existing resume for contact/context, tailor content to a job description, and export a **Jake Gutierrez LaTeX PDF**.
+# GitApply — System Design
+## Overview**GitApply** is a full-stack SaaS application that turns a developer's **GitHub activity** into an **ATS-optimized resume**. Users authenticate with GitHub, select repositories, generate AI-powered bullet points, upload an existing resume for contact/context, tailor content to a job description, and export a **Jake Gutierrez LaTeX PDF**.
 ---
 ## High-Level Architecture
 ┌─────────────────────────────────────────────────────────────┐ │ React SPA (Vite) │ │ / /connect /app /dashboard /post/:code │ └──────────────────────────┬──────────────────────────────────┘ │ credentials: include (session cookie) ┌──────────────────────────▼──────────────────────────────────┐ │ Express API (:3000) │ │ Auth · REST /api/* · LaTeX compile (pdflatex) │ └──────┬─────────────────┬─────────────────┬───────────────────┘ │ │ │ ▼ ▼ ▼ SQLite GitHub API Google Gemini (TypeORM) (Octokit) (generateContent)

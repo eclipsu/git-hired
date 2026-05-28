@@ -34,7 +34,7 @@ export default function Connect() {
           >
             <GitHubIcon size={28} />
           </div>
-          <h1 className="mt-6 font-sans font-bold text-xl text-foreground">Sign in to git-apply</h1>
+          <h1 className="mt-6 font-sans font-bold text-xl text-foreground">Sign in to GitApply</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             We&apos;ll analyze your repositories to build your resume. Read-only access.
           </p>
